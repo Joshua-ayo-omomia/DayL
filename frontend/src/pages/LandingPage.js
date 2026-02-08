@@ -13,8 +13,16 @@ import {
     Users,
     Code,
     BrainCircuit,
-    CheckCircle2
+    CheckCircle2,
+    TrendingUp,
+    Megaphone,
+    Palette,
+    DollarSign,
+    Briefcase,
+    Sparkles,
+    BadgeCheck
 } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
 import { motion } from 'framer-motion';
 
 const fadeInUp = {
