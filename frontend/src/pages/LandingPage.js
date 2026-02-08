@@ -543,16 +543,16 @@ export default function LandingPage() {
                             </h2>
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
                                 <p>
-                                    Day Learning is named after <strong className="text-foreground">Thomas Day</strong> — 
-                                    a Black furniture maker during the slave trade era whose craftsmanship was so exceptional 
+                                    Day Learning is named after <strong className="text-foreground">Thomas Day</strong>, 
+                                    a furniture maker during the slave trade era whose craftsmanship was so exceptional 
                                     he became the biggest employer of labor in North Carolina.
                                 </p>
                                 <p>
-                                    That quality standard is what we want our graduates to carry. We don't just teach AI — 
-                                    we train people to build with the kind of excellence that stands out.
+                                    That quality standard is what we want our graduates to carry. We don't just teach AI. 
+                                    We train people to build with the kind of excellence that stands out.
                                 </p>
                                 <p>
-                                    Day Learning is part of <strong className="text-foreground">THCO</strong> (Talentco Holding Company). 
+                                    Day Learning is part of <strong className="text-foreground">THCO</strong>. 
                                     Our graduates feed directly into THCO's talent solutions and build divisions, 
                                     creating real pathways to employment.
                                 </p>
