@@ -319,7 +319,7 @@ export default function LandingPage() {
             </section>
 
             {/* What You'll Learn Section */}
-            <section className="py-24 md:py-32 bg-card/30">
+            <section className="py-24 md:py-32">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
@@ -328,6 +328,7 @@ export default function LandingPage() {
                         transition={{ duration: 0.5 }}
                         className="text-center mb-16"
                     >
+                        <Badge variant="outline" className="mb-4">AI Engineer Track</Badge>
                         <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
                             What You'll <span className="text-teal">Learn</span>
                         </h2>
