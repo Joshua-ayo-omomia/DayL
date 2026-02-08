@@ -381,7 +381,28 @@ export function AdminApplications() {
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             <Badge variant="outline">{app.experience_years} years</Badge>
                                             <Badge variant="outline">{app.skill_area}</Badge>
+                                            {app.resume_url && (
+                                                <a 
+                                                    href={`${process.env.REACT_APP_BACKEND_URL}${app.resume_url}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-teal/20 text-teal rounded hover:bg-teal/30 transition-colors"
+                                                >
+                                                    <FileText className="w-3 h-3" />
+                                                    Download Resume
+                                                </a>
+                                            )}
                                         </div>
+                                        
+                                        {app.status === 'approved' && app.invitation_code && (
+                                            <div className="mt-3 p-2 rounded bg-teal/10 border border-teal/30">
+                                                <p className="text-xs text-muted-foreground">Invitation Code:</p>
+                                                <p className="font-mono text-teal font-semibold">{app.invitation_code}</p>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Register link: {window.location.origin}/register?code={app.invitation_code}
+                                                </p>
+                                            </div>
+                                        )}
                                         
                                         {app.ai_screening_result && (
                                             <div className="mt-4 p-3 rounded-lg bg-muted/50">
