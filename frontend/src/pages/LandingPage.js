@@ -89,7 +89,7 @@ export default function LandingPage() {
                                 className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed"
                             >
                                 Day Learning transforms experienced professionals into AI-powered experts. 
-                                Engineers, Marketers, Finance, Sales, Brand — we have a track for you. 
+                                Engineers, Marketers, Finance, Sales, Brand. We have a track for you. 
                                 <span className="text-amber font-semibold"> Completely free.</span>
                             </motion.p>
                             
