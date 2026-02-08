@@ -373,34 +373,91 @@ async def screen_application(application_id: str, user: dict = Depends(require_a
     
     await db.applications.update_one({"id": application_id}, {"$set": {"status": "under_ai_review"}})
     
-    screening_prompt = f"""You are screening applicants for Day Learning, an AI engineering training program. 
+    # Extract resume text if available
+    resume_text = "No resume uploaded"
+    if application.get('resume_url'):
+        try:
+            # Get the filename from the URL
+            resume_filename = application['resume_url'].split('/')[-1]
+            resume_path = UPLOAD_DIR / resume_filename
+            
+            if resume_path.exists():
+                file_ext = resume_path.suffix.lower()
+                
+                if file_ext == '.pdf':
+                    # Extract text from PDF
+                    with open(resume_path, 'rb') as f:
+                        pdf_reader = PyPDF2.PdfReader(f)
+                        resume_text = ""
+                        for page in pdf_reader.pages:
+                            resume_text += page.extract_text() + "\n"
+                        resume_text = resume_text.strip()
+                        if not resume_text:
+                            resume_text = "PDF uploaded but text could not be extracted (may be image-based)"
+                
+                elif file_ext == '.docx':
+                    # Extract text from DOCX
+                    doc = Document(resume_path)
+                    resume_text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
+                    if not resume_text:
+                        resume_text = "DOCX uploaded but no text content found"
+                
+                else:
+                    resume_text = f"Resume uploaded ({file_ext} file) but format not supported for text extraction"
+            else:
+                resume_text = "Resume file not found on server"
+                
+        except Exception as e:
+            logger.error(f"Error extracting resume text: {e}")
+            resume_text = f"Resume uploaded but extraction failed: {str(e)}"
+    
+    # Truncate resume text if too long (keep first 3000 chars)
+    if len(resume_text) > 3000:
+        resume_text = resume_text[:3000] + "\n... [truncated for length]"
+    
+    screening_prompt = f"""You are screening applicants for Day Learning, an AI training program for experienced professionals.
 
 We are looking for people who:
-- Have real programming/software engineering experience (minimum 1 year)
-- Can demonstrate they have actually built things (not just completed tutorials)
+- Have real professional experience in their field (minimum 1 year)
+- Can demonstrate they have actually built or delivered real work (not just completed tutorials or courses)
 - Show commitment and motivation to learn AI skills
-- Have a growth mindset
+- Have a growth mindset and clear goals
 
 We are NOT looking for:
-- Complete beginners with no coding experience
+- Complete beginners with no professional experience
 - People who only list course completions with no real work
 - Vague applications with no substance
+- People whose resume doesn't match their stated experience
 
-Applicant Information:
+=== APPLICATION FORM RESPONSES ===
 - Name: {application['full_name']}
-- Experience: {application['experience_years']} years
-- Skill Area: {application['skill_area']}
-- Why they want to join: {application['why_join']}
-- Brief/Background: {application.get('brief', 'Not provided')}
+- Email: {application['email']}
+- Years of Experience: {application['experience_years']}
+- Primary Skill Area: {application['skill_area']}
+- Why they want to join Day Learning: {application['why_join']}
+- Self-written Brief/Background: {application.get('brief', 'Not provided')}
 - LinkedIn: {application.get('linkedin_url', 'Not provided')}
 
-Review this application and return a JSON response:
+=== RESUME/CV CONTENT ===
+{resume_text}
+
+=== YOUR TASK ===
+Analyze BOTH the application form responses AND the resume content. Look for:
+1. Consistency between what they claim and what their resume shows
+2. Evidence of real projects, employment, or deliverables
+3. Relevant skills and experience for AI training
+4. Red flags like exaggerated claims, vague descriptions, or mismatches
+5. Overall quality and professionalism of their application
+
+Return a JSON response:
 {{
   "decision": "approve" | "reject" | "maybe",
   "confidence": 0-100,
-  "reasoning": "Brief explanation of decision",
-  "strengths": ["list of strengths"],
-  "concerns": ["list of concerns if any"],
+  "reasoning": "2-3 sentence explanation of your decision",
+  "resume_analysis": "Brief analysis of their resume quality and relevance",
+  "consistency_check": "Do their form responses match their resume? Any discrepancies?",
+  "strengths": ["list of 2-4 strengths"],
+  "concerns": ["list of concerns if any, or empty array"],
   "suggested_track": "AI Engineer"
 }}
 
@@ -410,7 +467,7 @@ Return ONLY the JSON, no other text."""
         client_anthropic = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         message = client_anthropic.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1024,
+            max_tokens=1500,
             messages=[{"role": "user", "content": screening_prompt}]
         )
         
