@@ -221,7 +221,7 @@ export const Footer = () => {
                     <div>
                         <h4 className="font-display font-semibold mb-4">THCO</h4>
                         <p className="text-muted-foreground text-sm">
-                            Day Learning is part of THCO — Talentco Holding Company.
+                            Day Learning is part of THCO.
                         </p>
                         <p className="text-muted-foreground text-sm mt-2">
                             Human insight. Amplified.
