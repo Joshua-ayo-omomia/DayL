@@ -587,9 +587,23 @@ export function AdminApplications() {
                             </div>
 
                             {selectedApp.invitation_code && (
-                                <div>
-                                    <Label className="text-muted-foreground">Invitation Code</Label>
-                                    <p className="font-mono text-teal">{selectedApp.invitation_code}</p>
+                                <div className="p-4 rounded-lg bg-teal/10 border border-teal/30">
+                                    <Label className="text-teal font-medium">Approved - Invitation Details</Label>
+                                    <div className="mt-2 space-y-2">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Invitation Code:</p>
+                                            <p className="font-mono text-lg text-teal font-semibold">{selectedApp.invitation_code}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Registration Link:</p>
+                                            <p className="font-mono text-sm text-teal break-all">
+                                                {window.location.origin}/register?code={selectedApp.invitation_code}
+                                            </p>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Share this link with the applicant so they can create their account.
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>
