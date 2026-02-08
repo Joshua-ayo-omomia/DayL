@@ -137,26 +137,30 @@ export default function LandingPage() {
                                 <Card className="relative veneer-card border-border/40 bg-card/80 backdrop-blur-sm">
                                     <CardContent className="p-8">
                                         <div className="space-y-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-xl bg-teal/20 flex items-center justify-center">
-                                                    <BrainCircuit className="w-6 h-6 text-teal" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-display font-semibold">AI Engineer Track</h3>
-                                                    <p className="text-sm text-muted-foreground">Build with AI, not just use it</p>
-                                                </div>
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-display font-semibold text-lg">Training Tracks</h3>
+                                                <Badge className="bg-amber/20 text-amber border-0">FREE</Badge>
                                             </div>
                                             <div className="space-y-3">
-                                                {['Prompt Engineering', 'AI Application Development', 'Production Deployment', 'Real-World Projects'].map((item, i) => (
-                                                    <div key={i} className="flex items-center gap-3">
-                                                        <CheckCircle2 className="w-5 h-5 text-teal" />
-                                                        <span className="text-sm">{item}</span>
+                                                {[
+                                                    { icon: Code, name: 'AI Engineer', status: 'Open Now', active: true },
+                                                    { icon: DollarSign, name: 'AI Finance Pro', status: 'Coming Soon', active: false },
+                                                    { icon: Megaphone, name: 'AI Marketing', status: 'Coming Soon', active: false },
+                                                    { icon: Palette, name: 'AI Brand', status: 'Coming Soon', active: false },
+                                                    { icon: TrendingUp, name: 'AI Sales', status: 'Coming Soon', active: false },
+                                                ].map((track, i) => (
+                                                    <div key={i} className={`flex items-center justify-between p-2 rounded-lg ${track.active ? 'bg-teal/10' : ''}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <track.icon className={`w-5 h-5 ${track.active ? 'text-teal' : 'text-muted-foreground'}`} />
+                                                            <span className={`text-sm ${track.active ? 'font-medium' : 'text-muted-foreground'}`}>{track.name}</span>
+                                                        </div>
+                                                        <span className={`text-xs ${track.active ? 'text-teal' : 'text-muted-foreground'}`}>{track.status}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                             <div className="pt-4 border-t border-border/40">
-                                                <p className="text-sm text-amber">
-                                                    Applications open for experienced developers
+                                                <p className="text-sm text-muted-foreground">
+                                                    For experienced professionals ready to <span className="text-amber">level up with AI</span>
                                                 </p>
                                             </div>
                                         </div>
