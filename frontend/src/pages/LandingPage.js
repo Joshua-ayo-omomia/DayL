@@ -224,15 +224,15 @@ export default function LandingPage() {
                             },
                             {
                                 icon: Megaphone,
-                                title: 'AI Marketing Engineer',
-                                subtitle: 'For Marketers',
+                                title: 'AI Marketer',
+                                subtitle: 'For Marketing Professionals',
                                 description: 'Create AI-powered campaigns, automate content creation, and optimize marketing strategies with AI insights.',
                                 status: 'coming',
                                 color: 'coral'
                             },
                             {
                                 icon: Palette,
-                                title: 'AI Brand Engineer',
+                                title: 'AI Brand Architect',
                                 subtitle: 'For Brand Strategists',
                                 description: 'Use AI for brand development, visual content creation, and maintaining consistent brand identity at scale.',
                                 status: 'coming',
@@ -240,8 +240,8 @@ export default function LandingPage() {
                             },
                             {
                                 icon: TrendingUp,
-                                title: 'AI Sales Engineer',
-                                subtitle: 'For Sales Professionals',
+                                title: 'AI Sales Professional',
+                                subtitle: 'For Sales Experts',
                                 description: 'Enhance sales processes with AI, automate lead scoring, personalize outreach, and predict customer behavior.',
                                 status: 'coming',
                                 color: 'teal'
