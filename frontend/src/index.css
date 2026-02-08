@@ -180,6 +180,16 @@ code {
     color: #EDEDE9;
 }
 
+/* Hide Emergent badge */
+#emergent-badge,
+a[href*="emergent.sh"],
+[class*="emergent"],
+div[style*="Made with Emergent"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 /* Focus states */
 *:focus-visible {
     outline: 2px solid #2A9D8F;
