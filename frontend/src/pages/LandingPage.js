@@ -553,11 +553,6 @@ export default function LandingPage() {
                                     We train people to build with the kind of excellence that stands out, the kind 
                                     that makes you the first call, not the backup option.
                                 </p>
-                                <p>
-                                    Day Learning is part of <strong className="text-foreground">THCO</strong>. 
-                                    Our graduates feed directly into THCO's talent solutions and build divisions, 
-                                    creating real pathways to employment.
-                                </p>
                             </div>
 
                             <div className="mt-8 flex items-center gap-4">
