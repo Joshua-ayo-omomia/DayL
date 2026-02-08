@@ -310,9 +310,11 @@ export default function LandingPage() {
                         transition={{ duration: 0.5, delay: 0.6 }}
                         className="mt-12 text-center"
                     >
-                        <p className="text-muted-foreground mb-4">
-                            More tracks launching soon. All training is <span className="text-amber font-semibold">completely free</span> — 
-                            we invest in you, and you invest your time and effort.
+                        <p className="text-muted-foreground mb-2">
+                            More tracks launching soon. All training is <span className="text-amber font-semibold">completely free</span>.
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                            Top performers may be placed in opportunities available through THCO's network.
                         </p>
                     </motion.div>
                 </div>
