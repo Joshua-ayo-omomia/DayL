@@ -1,0 +1,162 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "Day Learning",
+      "metaphor": "Digital Craftsmanship",
+      "core_values": ["Excellence", "Heritage", "Future-Proof", "Mentorship"],
+      "visual_theme": "The Artisan's Workshop (Dark Mode)"
+    },
+    "colors": {
+      "palette": {
+        "background": {
+          "default": "#0a0a0a",
+          "paper": "#121212",
+          "subtle": "#1A1A1A"
+        },
+        "primary": {
+          "main": "#2A9D8F",
+          "light": "#4DB6AC",
+          "dark": "#1F7A6F",
+          "description": "Patina Teal - Represents the oxidation of copper/bronze, blending history with modern tech."
+        },
+        "secondary": {
+          "main": "#E9C46A",
+          "light": "#F4D35E",
+          "dark": "#C7A03C",
+          "description": "Craftsman Amber - Used for warnings, highlights, and 'brass inlay' details."
+        },
+        "text": {
+          "primary": "#EDEDE9",
+          "secondary": "#A6A6A6",
+          "muted": "#525252"
+        },
+        "status": {
+          "success": "#2A9D8F",
+          "error": "#E76F51",
+          "warning": "#E9C46A",
+          "info": "#264653"
+        }
+      },
+      "gradients": {
+        "veneer": "linear-gradient(145deg, #1A1A1A 0%, #0a0a0a 100%)",
+        "glow": "radial-gradient(circle at center, rgba(42, 157, 143, 0.15) 0%, transparent 70%)"
+      }
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Playfair Display, serif",
+        "body": "Inter, sans-serif",
+        "code": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-4xl md:text-6xl font-bold tracking-tight",
+        "h2": "text-3xl md:text-4xl font-semibold tracking-tight",
+        "h3": "text-2xl md:text-3xl font-medium",
+        "body_lg": "text-lg leading-relaxed",
+        "body_base": "text-base leading-relaxed",
+        "caption": "text-sm text-muted-foreground"
+      }
+    },
+    "layout": {
+      "grid_system": "Mobile-first 4-column grid, expanding to 12-column on desktop. Use 'Bento' style layouts for dashboards.",
+      "spacing": {
+        "container_padding": "px-4 md:px-8 lg:px-12",
+        "section_gap": "py-16 md:py-24",
+        "element_gap": "gap-4 md:gap-6"
+      },
+      "radius": {
+        "default": "rounded-lg",
+        "card": "rounded-xl",
+        "button": "rounded-md"
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(42,157,143,0.3)] transition-all duration-300",
+        "secondary": "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        "ghost": "hover:bg-accent hover:text-accent-foreground"
+      },
+      "cards": {
+        "base": "bg-card text-card-foreground border border-border/40 shadow-sm hover:border-primary/50 transition-colors duration-300 relative overflow-hidden group",
+        "veneer_effect": "before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/5 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity"
+      },
+      "inputs": {
+        "base": "bg-background border-input focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+      }
+    },
+    "visual_enhancers": {
+      "textures": {
+        "grain": "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E\")",
+        "spiral_motif": "Use subtle SVG S-curves in backgrounds (opacity 0.03) to reference Thomas Day's furniture."
+      },
+      "shadows": {
+        "glow": "0 0 20px -5px rgba(42, 157, 143, 0.3)",
+        "deep": "0 10px 30px -10px rgba(0, 0, 0, 0.5)"
+      }
+    },
+    "assets": {
+      "images": {
+        "hero_main": {
+          "url": "https://images.unsplash.com/photo-1633504885008-f8fed592a06a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwyfHxBZnJpY2FuJTIwd29tYW4lMjBzb2Z0d2FyZSUyMGVuZ2luZWVyJTIwY29kaW5nJTIwbGFwdG9wfGVufDB8fHx8MTc3MDU4NDU5Nnww&ixlib=rb-4.1.0&q=85",
+          "alt": "African woman software engineer focused on coding",
+          "category": "hero"
+        },
+        "team_collaboration": {
+          "url": "https://images.unsplash.com/photo-1573167101669-476636b96cea?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDB8MHwxfHNlYXJjaHwxfHxBZnJpY2FuJTIwdGVjaCUyMHRlYW0lMjBjb2xsYWJvcmF0aW9uJTIwd2hpdGVib2FyZHxlbnwwfHx8fDE3NzA1ODQ2MDF8MA&ixlib=rb-4.1.0&q=85",
+          "alt": "Diverse tech team collaborating",
+          "category": "about"
+        },
+        "texture_abstract": {
+          "url": "https://images.unsplash.com/photo-1643324896137-f0928e76202a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGRpZ2l0YWwlMjBjcmFmdHNtYW5zaGlwJTIwdGV4dHVyZSUyMGRhcmt8ZW58MHx8fHwxNzcwNTg0NTc5fDA&ixlib=rb-4.1.0&q=85",
+          "alt": "Dark abstract texture with gold hints",
+          "category": "background"
+        },
+        "student_success": {
+          "url": "https://images.unsplash.com/photo-1758519291531-e96279895745?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzl8MHwxfHNlYXJjaHwxfHxBZnJpY2FuJTIwc29mdHdhcmUlMjBlbmdpbmVlciUyMGNvZGluZyUyMG1vZGVybiUyMG9mZmljZXxlbnwwfHx8fDE3NzA1ODQ1NzR8MA&ixlib=rb-4.1.0&q=85",
+          "alt": "Successful student with mobile device",
+          "category": "testimonials"
+        }
+      },
+      "icons": "Use Lucide React icons. Stroke width 1.5px for elegance."
+    },
+    "accessibility": {
+      "contrast_check": "Ensure all text meets WCAG AA (4.5:1) against the dark background.",
+      "focus_states": "Visible ring-2 ring-primary ring-offset-2 ring-offset-background",
+      "reduced_motion": "Respect prefers-reduced-motion media query."
+    }
+  },
+  "instructions_to_main_agent": {
+    "general": "You are building a high-end, mobile-first AI upskilling platform. The design must feel 'crafted' and 'aspirational', not generic. Use the provided colors and typography strictly.",
+    "setup": [
+      "Install 'lucide-react' for icons.",
+      "Install 'framer-motion' for subtle entrance animations.",
+      "Configure Tailwind with the provided color palette in 'tailwind.config.js'.",
+      "Add 'Playfair Display' and 'Inter' fonts via Google Fonts in 'index.css'."
+    ],
+    "pages": {
+      "landing": "Hero section must use the 'hero_main' image with a gradient overlay. Use 'Playfair Display' for the main headline: 'Craft Your Future in AI'.",
+      "dashboard": "Use a 'Bento' grid layout. Cards should have the 'veneer_effect' (subtle shine on hover). Keep it dense but readable.",
+      "application_form": "Split into steps (Wizard). Use 'Craftsman Amber' for the active step indicator."
+    },
+    "universal_guidelines": [
+      "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+      "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+      "Create depth through layered design elements with z-index hierarchy",
+      "Use glass-morphism effects with backdrop filters (12-24px blur)",
+      "You MUST NOT apply universal transition. Eg: 'transition: all'. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+      "You MUST NOT center align the app container, ie do not add '.App { text-align: center; }' in the css file. This disrupts the human natural reading flow of text",
+      "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+      "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons.",
+      "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+      "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+      "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+      "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+      "Prioritize using pre-existing components from src/components/ui when applicable",
+      "Create new components that match the style and conventions of existing components when needed",
+      "Examine existing components to understand the project's component patterns before creating new ones",
+      "Components MUST use named exports (export const ComponentName = ...)",
+      "Pages MUST use default exports (export default function PageName() {...})",
+      "Use 'sonner' for toasts. Sonner component are located in '/app/src/components/ui/sonner.tsx'"
+    ]
+  }
+}
