@@ -396,6 +396,21 @@ export function AdminApplications() {
                                                     </Badge>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground">{app.ai_screening_result.reasoning}</p>
+                                                
+                                                {app.ai_screening_result.resume_analysis && (
+                                                    <div className="mt-2">
+                                                        <span className="text-xs text-blue-400">Resume Analysis:</span>
+                                                        <p className="text-xs text-muted-foreground">{app.ai_screening_result.resume_analysis}</p>
+                                                    </div>
+                                                )}
+                                                
+                                                {app.ai_screening_result.consistency_check && (
+                                                    <div className="mt-2">
+                                                        <span className="text-xs text-purple-400">Consistency Check:</span>
+                                                        <p className="text-xs text-muted-foreground">{app.ai_screening_result.consistency_check}</p>
+                                                    </div>
+                                                )}
+                                                
                                                 {app.ai_screening_result.strengths?.length > 0 && (
                                                     <div className="mt-2">
                                                         <span className="text-xs text-teal">Strengths:</span>
