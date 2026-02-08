@@ -110,8 +110,8 @@ export default function LandingPage() {
 
                             <motion.div variants={fadeInUp} className="flex items-center gap-8 pt-4">
                                 <div className="text-center">
-                                    <p className="text-2xl font-bold text-teal">4</p>
-                                    <p className="text-xs text-muted-foreground">Modules</p>
+                                    <p className="text-2xl font-bold text-teal">6+</p>
+                                    <p className="text-xs text-muted-foreground">Tracks</p>
                                 </div>
                                 <div className="h-8 w-px bg-border" />
                                 <div className="text-center">
@@ -120,8 +120,8 @@ export default function LandingPage() {
                                 </div>
                                 <div className="h-8 w-px bg-border" />
                                 <div className="text-center">
-                                    <p className="text-2xl font-bold text-foreground">Free</p>
-                                    <p className="text-xs text-muted-foreground">First Cohort</p>
+                                    <p className="text-2xl font-bold text-teal">FREE</p>
+                                    <p className="text-xs text-muted-foreground">Forever</p>
                                 </div>
                             </motion.div>
                         </motion.div>
