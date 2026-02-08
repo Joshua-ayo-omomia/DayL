@@ -183,6 +183,141 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* Training Tracks Section */}
+            <section id="tracks" className="py-24 md:py-32 bg-card/30 relative overflow-hidden">
+                <div className="absolute inset-0 spiral-bg opacity-30" />
+                <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5 }}
+                        className="text-center mb-16"
+                    >
+                        <Badge className="bg-amber/20 text-amber border-0 mb-4">100% FREE TRAINING</Badge>
+                        <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+                            Choose Your <span className="text-teal">Track</span>
+                        </h2>
+                        <p className="text-muted-foreground max-w-2xl mx-auto">
+                            Day Learning offers specialized AI training for professionals across multiple fields. 
+                            Each track is designed for people who already have experience and want to amplify their skills with AI.
+                        </p>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[
+                            {
+                                icon: Code,
+                                title: 'AI Engineer',
+                                subtitle: 'For Software Engineers',
+                                description: 'Build AI-powered applications, master prompt engineering, and deploy production-ready AI solutions.',
+                                status: 'open',
+                                color: 'teal'
+                            },
+                            {
+                                icon: DollarSign,
+                                title: 'AI Finance Professional',
+                                subtitle: 'For Finance Experts',
+                                description: 'Leverage AI for financial analysis, automated reporting, risk assessment, and data-driven decision making.',
+                                status: 'coming',
+                                color: 'amber'
+                            },
+                            {
+                                icon: Megaphone,
+                                title: 'AI Marketing Engineer',
+                                subtitle: 'For Marketers',
+                                description: 'Create AI-powered campaigns, automate content creation, and optimize marketing strategies with AI insights.',
+                                status: 'coming',
+                                color: 'coral'
+                            },
+                            {
+                                icon: Palette,
+                                title: 'AI Brand Engineer',
+                                subtitle: 'For Brand Strategists',
+                                description: 'Use AI for brand development, visual content creation, and maintaining consistent brand identity at scale.',
+                                status: 'coming',
+                                color: 'amber'
+                            },
+                            {
+                                icon: TrendingUp,
+                                title: 'AI Sales Engineer',
+                                subtitle: 'For Sales Professionals',
+                                description: 'Enhance sales processes with AI, automate lead scoring, personalize outreach, and predict customer behavior.',
+                                status: 'coming',
+                                color: 'teal'
+                            },
+                            {
+                                icon: Briefcase,
+                                title: 'AI Business Analyst',
+                                subtitle: 'For Analysts',
+                                description: 'Transform data into insights using AI, automate reporting, and drive strategic business decisions.',
+                                status: 'coming',
+                                color: 'amber'
+                            }
+                        ].map((track, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                            >
+                                <Card className={`h-full veneer-card border-border/40 transition-all duration-300 ${
+                                    track.status === 'open' 
+                                        ? 'hover:border-teal/50 hover:shadow-[0_0_30px_-10px_rgba(42,157,143,0.3)]' 
+                                        : 'opacity-80 hover:opacity-100'
+                                }`}>
+                                    <CardContent className="p-6">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                                track.status === 'open' ? 'bg-teal/20' : 'bg-muted'
+                                            }`}>
+                                                <track.icon className={`w-6 h-6 ${
+                                                    track.status === 'open' ? 'text-teal' : 'text-muted-foreground'
+                                                }`} />
+                                            </div>
+                                            {track.status === 'open' ? (
+                                                <Badge className="bg-teal/20 text-teal border-0">
+                                                    <BadgeCheck className="w-3 h-3 mr-1" />
+                                                    Open Now
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="secondary">Coming Soon</Badge>
+                                            )}
+                                        </div>
+                                        <h3 className="font-display font-semibold text-lg mb-1">{track.title}</h3>
+                                        <p className="text-sm text-muted-foreground mb-3">{track.subtitle}</p>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">{track.description}</p>
+                                        
+                                        {track.status === 'open' && (
+                                            <Button asChild className="w-full mt-4 bg-teal hover:bg-teal-light">
+                                                <Link to="/apply">
+                                                    Apply Now
+                                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.6 }}
+                        className="mt-12 text-center"
+                    >
+                        <p className="text-muted-foreground mb-4">
+                            More tracks launching soon. All training is <span className="text-amber font-semibold">completely free</span> — 
+                            we invest in you, and you invest your time and effort.
+                        </p>
+                    </motion.div>
+                </div>
+            </section>
+
             {/* What You'll Learn Section */}
             <section className="py-24 md:py-32 bg-card/30">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
