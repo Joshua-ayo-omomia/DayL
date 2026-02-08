@@ -457,7 +457,7 @@ async def approve_application(application_id: str, user: dict = Depends(require_
                 <li>Start your AI engineering journey!</li>
             </ol>
             <p style="margin-top: 30px;">Welcome to the Day Learning community.</p>
-            <p><em>— The Day Learning Team at THCO</em></p>
+            <p><em>The Day Learning Team at THCO</em></p>
         </div>
         """
         
@@ -496,7 +496,7 @@ async def reject_application(application_id: str, user: dict = Depends(require_a
                 <li>Reapply in the future when you have more experience to share</li>
             </ul>
             <p>Keep building, keep learning.</p>
-            <p><em>— The Day Learning Team at THCO</em></p>
+            <p><em>The Day Learning Team at THCO</em></p>
         </div>
         """
         
