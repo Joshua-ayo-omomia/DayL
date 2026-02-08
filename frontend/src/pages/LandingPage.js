@@ -409,7 +409,7 @@ export default function LandingPage() {
                                     'Engineers, marketers, finance experts, sales pros, brand strategists',
                                     'People who have delivered real work, not just completed courses',
                                     'Self-motivated learners ready to commit time and effort',
-                                    'Builders who want practical skills, not just certificates'
+                                    'Those seeking real skills and potential job opportunities'
                                 ].map((item, index) => (
                                     <div key={index} className="flex items-start gap-3">
                                         <CheckCircle2 className="w-5 h-5 text-teal mt-0.5 flex-shrink-0" />
