@@ -383,7 +383,7 @@ export default function LandingPage() {
             </section>
 
             {/* Who This Is For Section */}
-            <section className="py-24 md:py-32">
+            <section className="py-24 md:py-32 bg-card/30">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                         <motion.div
@@ -396,16 +396,18 @@ export default function LandingPage() {
                                 Who This Is <span className="text-amber">For</span>
                             </h2>
                             <p className="text-muted-foreground mb-8 leading-relaxed">
-                                Day Learning is <strong className="text-foreground">not</strong> for beginners. We're looking for professionals 
-                                who already know how to build and want to amplify their capabilities with AI.
+                                Day Learning is <strong className="text-foreground">not</strong> for beginners. We're looking for 
+                                <strong className="text-foreground"> experienced professionals</strong> across all fields who want to 
+                                amplify their existing skills with AI.
                             </p>
                             
                             <div className="space-y-4">
                                 {[
-                                    'Software engineers with 1+ years of professional experience',
-                                    'Developers who have shipped real products or contributed to codebases',
-                                    'Professionals ready to commit dedicated time to learning',
-                                    'Builders with a growth mindset, not just certification seekers'
+                                    'Professionals with 1+ years of experience in their field',
+                                    'Engineers, marketers, finance experts, sales pros, brand strategists',
+                                    'People who have delivered real work, not just completed courses',
+                                    'Self-motivated learners ready to commit time and effort',
+                                    'Builders who want practical skills, not just certificates'
                                 ].map((item, index) => (
                                     <div key={index} className="flex items-start gap-3">
                                         <CheckCircle2 className="w-5 h-5 text-teal mt-0.5 flex-shrink-0" />
