@@ -987,7 +987,7 @@ async def seed_data():
         },
         {
             "title": "Building Your First AI Application",
-            "description": "Put it all together — build a real application powered by AI. From concept to working prototype.",
+            "description": "Put it all together. Build a real application powered by AI. From concept to working prototype.",
             "order": 3,
             "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
             "resources": [
