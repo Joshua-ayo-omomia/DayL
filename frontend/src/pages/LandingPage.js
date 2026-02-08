@@ -544,12 +544,14 @@ export default function LandingPage() {
                             <div className="space-y-4 text-muted-foreground leading-relaxed">
                                 <p>
                                     Day Learning is named after <strong className="text-foreground">Thomas Day</strong>, 
-                                    a furniture maker during the slave trade era whose craftsmanship was so exceptional 
-                                    he became the biggest employer of labor in North Carolina.
+                                    a 19th-century furniture maker whose craftsmanship was so exceptional he became the 
+                                    largest employer of labor in North Carolina. His work wasn't just good, it was undeniable. 
+                                    Clients traveled from across the state because no one else built at his level.
                                 </p>
                                 <p>
-                                    That quality standard is what we want our graduates to carry. We don't just teach AI. 
-                                    We train people to build with the kind of excellence that stands out.
+                                    That standard is what we want our graduates to carry. We don't just teach AI. 
+                                    We train people to build with the kind of excellence that stands out, the kind 
+                                    that makes you the first call, not the backup option.
                                 </p>
                                 <p>
                                     Day Learning is part of <strong className="text-foreground">THCO</strong>. 
