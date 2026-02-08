@@ -145,9 +145,9 @@ export default function LandingPage() {
                                                 {[
                                                     { icon: Code, name: 'AI Engineer', status: 'Open Now', active: true },
                                                     { icon: DollarSign, name: 'AI Finance Pro', status: 'Coming Soon', active: false },
-                                                    { icon: Megaphone, name: 'AI Marketing', status: 'Coming Soon', active: false },
-                                                    { icon: Palette, name: 'AI Brand', status: 'Coming Soon', active: false },
-                                                    { icon: TrendingUp, name: 'AI Sales', status: 'Coming Soon', active: false },
+                                                    { icon: Megaphone, name: 'AI Marketer', status: 'Coming Soon', active: false },
+                                                    { icon: Palette, name: 'AI Brand Architect', status: 'Coming Soon', active: false },
+                                                    { icon: TrendingUp, name: 'AI Sales Pro', status: 'Coming Soon', active: false },
                                                 ].map((track, i) => (
                                                     <div key={i} className={`flex items-center justify-between p-2 rounded-lg ${track.active ? 'bg-teal/10' : ''}`}>
                                                         <div className="flex items-center gap-3">
