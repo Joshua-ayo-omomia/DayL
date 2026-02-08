@@ -157,14 +157,28 @@ class DayLearningAPITester:
             "commitment": "true"
         }
         
-        success, app_response = self.run_test(
-            "Submit Application",
-            "POST",
-            "applications",
-            200,
-            data=app_data,
-            headers={'Content-Type': 'application/x-www-form-urlencoded'}
-        )
+        # Submit application using form data
+        try:
+            url = f"{self.base_url}/applications"
+            response = requests.post(url, data=app_data)
+            
+            if response.status_code == 200:
+                app_response = response.json()
+                self.log_test("Submit Application", True, f"Status: {response.status_code}")
+                success = True
+            else:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('detail', f"Status: {response.status_code}")
+                except:
+                    error_msg = f"Status: {response.status_code}"
+                self.log_test("Submit Application", False, "", error_msg)
+                success = False
+                app_response = {}
+        except Exception as e:
+            self.log_test("Submit Application", False, "", str(e))
+            success = False
+            app_response = {}
         
         if success and 'id' in app_response:
             app_id = app_response['id']
