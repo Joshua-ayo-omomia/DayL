@@ -65,10 +65,14 @@ export default function LandingPage() {
                             variants={staggerContainer}
                             className="space-y-8"
                         >
-                            <motion.div variants={fadeInUp}>
+                            <motion.div variants={fadeInUp} className="flex flex-wrap gap-3">
                                 <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal/10 border border-teal/20 text-teal text-sm">
                                     <Zap className="w-4 h-4" />
                                     AI Engineer Track Now Open
+                                </span>
+                                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber/10 border border-amber/20 text-amber text-sm font-semibold">
+                                    <Sparkles className="w-4 h-4" />
+                                    100% FREE
                                 </span>
                             </motion.div>
                             
@@ -76,16 +80,17 @@ export default function LandingPage() {
                                 variants={fadeInUp}
                                 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-tight"
                             >
-                                Craft Your
-                                <span className="block text-teal">Future in AI</span>
+                                Become an
+                                <span className="block text-teal">AI-Powered Professional</span>
                             </motion.h1>
                             
                             <motion.p 
                                 variants={fadeInUp}
                                 className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed"
                             >
-                                Day Learning trains professionals who already build to become AI-powered engineers. 
-                                Not tutorials. Real skills. Real projects. Real careers.
+                                Day Learning transforms experienced professionals into AI-powered experts. 
+                                Engineers, Marketers, Finance, Sales, Brand — we have a track for you. 
+                                <span className="text-amber font-semibold"> Completely free.</span>
                             </motion.p>
                             
                             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4">
