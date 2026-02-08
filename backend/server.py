@@ -1015,12 +1015,12 @@ async def seed_data():
         module = Module(track_id=track.id, **module_data)
         await db.modules.insert_one(module.model_dump())
     
-    admin_exists = await db.users.find_one({"email": "admin@daylearning.com"}, {"_id": 0})
+    admin_exists = await db.users.find_one({"email": "joshua@thcohq.com"}, {"_id": 0})
     if not admin_exists:
         admin = User(
-            email="admin@daylearning.com",
+            email="joshua@thcohq.com",
             password_hash=hash_password("admin123"),
-            name="Day Learning Admin",
+            name="Joshua",
             role="super_admin",
             onboarding_completed=True
         )
