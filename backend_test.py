@@ -325,14 +325,29 @@ class DayLearningAPITester:
                     "notes": "This project demonstrates my understanding of the module concepts"
                 }
                 
-                success, sub_response = self.run_test(
-                    "Create Submission",
-                    "POST",
-                    "submissions",
-                    200,
-                    data=submission_data,
-                    headers={'Authorization': f'Bearer {student_token}', 'Content-Type': 'application/x-www-form-urlencoded'}
-                )
+                # Test submission creation using form data
+                try:
+                    url = f"{self.base_url}/submissions"
+                    headers = {'Authorization': f'Bearer {student_token}'}
+                    response = requests.post(url, data=submission_data, headers=headers)
+                    
+                    if response.status_code == 200:
+                        sub_response = response.json()
+                        self.log_test("Create Submission", True, f"Status: {response.status_code}")
+                        success = True
+                    else:
+                        try:
+                            error_data = response.json()
+                            error_msg = error_data.get('detail', f"Status: {response.status_code}")
+                        except:
+                            error_msg = f"Status: {response.status_code}"
+                        self.log_test("Create Submission", False, "", error_msg)
+                        success = False
+                        sub_response = {}
+                except Exception as e:
+                    self.log_test("Create Submission", False, "", str(e))
+                    success = False
+                    sub_response = {}
                 
                 if success and 'id' in sub_response:
                     submission_id = sub_response['id']
