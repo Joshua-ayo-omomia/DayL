@@ -964,7 +964,7 @@ async def seed_data():
     modules_data = [
         {
             "title": "Introduction to AI-Powered Development",
-            "description": "Understand what it means to build with AI — not just use it. Learn the mindset shift required to become an AI engineer.",
+            "description": "Understand what it means to build with AI, not just use it. Learn the mindset shift required to become an AI engineer.",
             "order": 1,
             "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
             "resources": [
