@@ -582,7 +582,7 @@ export default function LandingPage() {
                             Ready to Build Your <span className="text-teal">AI Future</span>?
                         </h2>
                         <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
-                            Join the first cohort of AI Engineers. Limited spots available for qualified applicants.
+                            Join the first cohort of AI professionals. Limited spots available for qualified applicants.
                         </p>
                         <Button asChild size="lg" className="bg-teal hover:bg-teal-light text-white glow group">
                             <Link to="/apply" data-testid="cta-apply-btn">
