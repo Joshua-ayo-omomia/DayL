@@ -203,23 +203,22 @@ export default function ModulePage() {
                         transition={{ delay: 0.1 }}
                         className="mb-8"
                     >
-                        <Card className="border-border/40 bg-card/80 overflow-hidden">
-                            <div className="aspect-video bg-black">
-                                {module?.video_url ? (
-                                    <iframe
-                                        src={module.video_url}
-                                        title={module.title}
-                                        className="w-full h-full"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <Play className="w-16 h-16 text-muted-foreground" />
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
+                        <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+                            <ShieldCheck className="w-4 h-4 text-teal" />
+                            <span>Protected content - Screen recording is disabled</span>
+                        </div>
+                        {module?.video_url ? (
+                            <ProtectedVideoPlayer 
+                                videoUrl={module.video_url} 
+                                moduleTitle={module.title}
+                            />
+                        ) : (
+                            <Card className="border-border/40 bg-card/80 overflow-hidden">
+                                <div className="aspect-video bg-black flex items-center justify-center">
+                                    <Play className="w-16 h-16 text-muted-foreground" />
+                                </div>
+                            </Card>
+                        )}
                     </motion.div>
 
                     {/* Resources */}
