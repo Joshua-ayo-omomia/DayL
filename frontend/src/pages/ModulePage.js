@@ -10,6 +10,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Navbar, Footer } from '../components/Layout';
 import { toast } from 'sonner';
+import ProtectedVideoPlayer from '../components/ProtectedVideoPlayer';
 import { 
     Play, 
     CheckCircle2, 
@@ -19,7 +20,8 @@ import {
     FileText,
     Upload,
     Loader2,
-    BookOpen
+    BookOpen,
+    ShieldCheck
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
