@@ -188,9 +188,7 @@ export default function ModulePage() {
                             {isCompleted && (
                                 <Badge className="bg-teal/20 text-teal border-0">Completed</Badge>
                             )}
-                            {module?.has_assessment && (
-                                <Badge variant="outline">Has Assessment</Badge>
-                            )}
+                            <Badge variant="outline" className="border-amber/50 text-amber">Assessment Required</Badge>
                         </div>
                         <h1 className="font-display text-3xl md:text-4xl font-bold mb-4">{module?.title}</h1>
                         <p className="text-muted-foreground">{module?.description}</p>
