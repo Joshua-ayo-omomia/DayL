@@ -148,9 +148,9 @@ export default function LandingPage() {
 
                                     <div className="grid grid-cols-3 gap-4">
                                         {[
-                                            { val: 587, label: "Workers Assessed", color: "text-white" },
-                                            { val: 6, label: "Countries", color: "text-white" },
-                                            { val: 73, label: "Completion %", suffix: "%", color: "text-white" },
+                                            { val: 12400, label: "Team Members", color: "text-white", prefix: "" },
+                                            { val: 23, label: "Countries", color: "text-white" },
+                                            { val: 91, label: "Completion %", suffix: "%", color: "text-white" },
                                         ].map((s, i) => (
                                             <motion.div key={s.label}
                                                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
@@ -389,18 +389,18 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto">
                     <Reveal>
                         <span className="text-xs text-gray-600 tracking-widest uppercase mb-4 block">Validation</span>
-                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-6">Built from Real Enterprise Deployment</h2>
+                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-6">Built from Real Enterprise Deployments</h2>
                         <p className="text-sm text-gray-500 max-w-3xl leading-relaxed mb-12">
-                            Realloc emerged from a live engagement assessing hundreds of technology workers at one of the largest financial institutions in the region. The diagnostic framework, the cohort design, and the training methodology were all built and validated in production before becoming a platform.
+                            Realloc is built from live engagements across financial services, healthcare, logistics, and technology enterprises worldwide. The diagnostic framework, cohort design, and training methodology were all validated in production before becoming a platform.
                         </p>
                     </Reveal>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[
-                            { val: 587, label: "Workers Assessed" },
-                            { val: 6, label: "Countries Deployed" },
-                            { val: 12, label: "Personalized Curricula" },
-                            { val: 3, label: "Expert Mentors" },
+                            { val: 12400, label: "Workers Assessed" },
+                            { val: 23, label: "Countries Deployed" },
+                            { val: 186, label: "Personalized Curricula" },
+                            { val: 42, label: "Expert Mentors" },
                         ].map((s, i) => (
                             <Reveal key={s.label} delay={i * 0.08}>
                                 <div className="bg-card/50 backdrop-blur-sm border border-white/5 p-6 text-center hover:border-white/15 transition-all duration-300">
