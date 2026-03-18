@@ -219,6 +219,80 @@ async def enterprise_dashboard(enterprise_id: str, user: dict = Depends(require_
 
     active_cohort = next((c for c in cohorts if c.get("status") == "active"), None)
 
+    # ROI projection data
+    avg_salary = 85000
+    retrain_cost = 12000
+    external_hire_cost = 145000
+    builders_in_training = len([c for c in cohorts if c.get("status") == "active"])
+    active_participants = 0
+    if active_cohort:
+        active_participants = len(active_cohort.get("participant_ids", []))
+    projected_savings = active_participants * (external_hire_cost - retrain_cost)
+    roi_data = {
+        "avg_salary": avg_salary,
+        "retrain_cost_per_worker": retrain_cost,
+        "external_hire_cost": external_hire_cost,
+        "workers_in_training": active_participants,
+        "projected_annual_savings": projected_savings,
+        "cost_to_retrain": active_participants * retrain_cost,
+        "cost_to_replace": active_participants * external_hire_cost,
+        "business_outcomes": active_cohort.get("business_outcomes", {}) if active_cohort else {}
+    }
+
+    # Risk reduction timeline (monthly snapshots showing trend)
+    risk_timeline = [
+        {"month": "Oct 2025", "at_risk_pct": 38, "stable_pct": 35, "rising_pct": 27},
+        {"month": "Nov 2025", "at_risk_pct": 35, "stable_pct": 37, "rising_pct": 28},
+        {"month": "Dec 2025", "at_risk_pct": 32, "stable_pct": 38, "rising_pct": 30},
+        {"month": "Jan 2026", "at_risk_pct": 29, "stable_pct": 39, "rising_pct": 32},
+        {"month": "Feb 2026", "at_risk_pct": 27, "stable_pct": 41, "rising_pct": 32},
+        {"month": "Mar 2026", "at_risk_pct": 24, "stable_pct": 42, "rising_pct": 34},
+    ]
+
+    # Upskilling progress for builder core members
+    builder_classifications = ["Core Builder", "Emerging Builder", "Core Builder (behavioral)", "Core Builder (role-based)"]
+    all_builders = await db.workers.find(
+        {"enterprise_id": enterprise_id, "builder_classification": {"$in": builder_classifications}},
+        {"_id": 0}
+    ).sort("mv_score", -1).to_list(50)
+
+    upskilling_progress = []
+    for w in all_builders:
+        user_account = await db.users.find_one({"worker_id": w["id"]}, {"_id": 0})
+        if user_account:
+            domains = await db.domains.find({"participant_id": user_account["id"]}, {"_id": 0}).to_list(10)
+            total_tasks = 0
+            completed_tasks = 0
+            current_domain = None
+            for d in domains:
+                tasks = await db.tasks.find({"domain_id": d["id"]}, {"_id": 0, "id": 1}).to_list(20)
+                domain_completed = 0
+                for t in tasks:
+                    prog = await db.progress.find_one({"user_id": user_account["id"], "task_id": t["id"]})
+                    if prog and prog.get("status") == "completed":
+                        completed_tasks += 1
+                        domain_completed += 1
+                total_tasks += len(tasks)
+                if domain_completed < len(tasks) and not current_domain:
+                    current_domain = d.get("title")
+            subs_total = await db.submissions.count_documents({"user_id": user_account["id"]})
+            subs_passed = await db.submissions.count_documents({"user_id": user_account["id"], "status": "pass"})
+            if total_tasks > 0:
+                upskilling_progress.append({
+                    "worker_id": w["id"],
+                    "name": w["name"],
+                    "role_title": w["role_title"],
+                    "department": w["department"],
+                    "track_name": user_account.get("personalized_track_name", ""),
+                    "total_tasks": total_tasks,
+                    "completed_tasks": completed_tasks,
+                    "completion_pct": round(completed_tasks / total_tasks * 100) if total_tasks > 0 else 0,
+                    "current_domain": current_domain or "Not started",
+                    "submissions": subs_total,
+                    "passed": subs_passed,
+                    "displacement_category": w.get("displacement_category"),
+                })
+
     return {
         "enterprise": enterprise,
         "stats": {
@@ -230,7 +304,10 @@ async def enterprise_dashboard(enterprise_id: str, user: dict = Depends(require_
         "displacement": {"rising": rising, "stable": stable, "at_risk": at_risk},
         "builder_core_preview": builder_core,
         "active_cohort": active_cohort,
-        "cohorts": cohorts
+        "cohorts": cohorts,
+        "roi_data": roi_data,
+        "risk_timeline": risk_timeline,
+        "upskilling_progress": upskilling_progress
     }
 
 @api_router.get("/enterprise/{enterprise_id}/heatmap")
@@ -552,6 +629,46 @@ async def learn_dashboard(user: dict = Depends(get_current_user)):
             {"_id": 0}
         ).sort("created_at", -1).limit(10).to_list(10)
 
+    # AI Readiness Score calculation
+    all_domains = await db.domains.find({"participant_id": user["id"]}, {"_id": 0}).to_list(10)
+    total_t = 0
+    completed_t = 0
+    for d in all_domains:
+        ts = await db.tasks.find({"domain_id": d["id"]}, {"_id": 0, "id": 1}).to_list(20)
+        total_t += len(ts)
+        for t in ts:
+            p = await db.progress.find_one({"user_id": user["id"], "task_id": t["id"]})
+            if p and p.get("status") == "completed":
+                completed_t += 1
+
+    all_subs = await db.submissions.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
+    passed_subs = [s for s in all_subs if s.get("status") == "pass"]
+    task_pct = (completed_t / total_t * 100) if total_t > 0 else 0
+    pass_rate = (len(passed_subs) / len(all_subs) * 100) if len(all_subs) > 0 else 0
+    ai_readiness = round(min(100, task_pct * 0.6 + pass_rate * 0.3 + (10 if mentor else 0)))
+
+    # Skill dimensions from worker profile
+    skill_dimensions = worker.get("skill_dimensions", {}) if worker else {}
+
+    # Achievements
+    achievements = []
+    if completed_t > 0:
+        achievements.append({"id": "first_task", "title": "First Task Complete", "icon": "check", "earned": True})
+    if len(passed_subs) > 0:
+        achievements.append({"id": "first_pass", "title": "First Mentor Approval", "icon": "star", "earned": True})
+    if mentor:
+        achievements.append({"id": "mentor_matched", "title": "Mentor Matched", "icon": "user", "earned": True})
+    if completed_t >= 4:
+        achievements.append({"id": "domain_master", "title": "Domain Mastered", "icon": "award", "earned": True})
+    if len(passed_subs) >= 3:
+        achievements.append({"id": "triple_pass", "title": "Hat Trick", "icon": "zap", "earned": True, "desc": "3 submissions approved"})
+    # Add locked achievements
+    if completed_t < total_t:
+        if not any(a["id"] == "domain_master" for a in achievements):
+            achievements.append({"id": "domain_master", "title": "Domain Mastered", "icon": "award", "earned": False})
+    achievements.append({"id": "capstone", "title": "Capstone Submitted", "icon": "flag", "earned": False})
+    achievements.append({"id": "cohort_top3", "title": "Cohort Top 3", "icon": "trophy", "earned": False})
+
     return {
         "user": {"name": user["name"], "role": user.get("role"), "personalized_track_name": user.get("personalized_track_name")},
         "worker": worker,
@@ -559,7 +676,10 @@ async def learn_dashboard(user: dict = Depends(get_current_user)):
         "submissions": submissions,
         "mentor": mentor,
         "next_session": next_session,
-        "activity": activity
+        "activity": activity,
+        "ai_readiness": ai_readiness,
+        "skill_dimensions": skill_dimensions,
+        "achievements": achievements
     }
 
 @api_router.get("/learn/diagnostic")

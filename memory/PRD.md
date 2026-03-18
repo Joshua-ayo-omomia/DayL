@@ -1,7 +1,7 @@
 # Realloc — Product Requirements Document
 
 ## Overview
-Realloc is an AI workforce reallocation platform for enterprise clients. It diagnoses which roles are rising and declining due to AI, identifies top performers ("builders"), generates personalized training paths from assessment data, assigns expert mentors, and produces board-ready reports.
+Realloc is an AI workforce reallocation platform for enterprise clients. It diagnoses which roles are rising and declining due to AI, identifies top performers ("builders"), generates personalized training paths, assigns expert mentors, and produces board-ready reports.
 
 ## Target Users
 - **Enterprise Admins** (e.g., CTO/CIO) — view dashboards, heatmaps, builder core, board reports
@@ -32,10 +32,10 @@ Realloc is an AI workforce reallocation platform for enterprise clients. It diag
 | My Mentor | `/learn/mentor` | Done |
 
 ## Database Collections
-enterprises, workers, cohorts, mentors, domains, tasks, submissions, business_cases, discussion_threads, users
+enterprises, workers, cohorts, mentors, domains, tasks, submissions, business_cases, discussion_threads, users, progress
 
 ## Seed Data
-587 synthetic workers + 10 real "Builder Core" candidates for Sagicor Financial demo. Seeded via `/app/backend/seed.py`.
+587 synthetic workers + 10 real "Builder Core" candidates with skill_dimensions and training curricula. Seeded via `/app/backend/seed.py`.
 
 ## Demo Credentials
 - Enterprise Admin: `neil@sagicor.com` / `demo123`
@@ -44,12 +44,24 @@ enterprises, workers, cohorts, mentors, domains, tasks, submissions, business_ca
 - Super Admin: `ayo@realloc.ai` / `admin123`
 
 ## What's Been Implemented
+
+### Core Platform (P1/P2)
 - Full backend rewrite with all API endpoints
-- Full frontend rewrite with all pages listed above
+- Full frontend rewrite with all pages
 - Database seeding with 587 workers and all associated data
-- Futuristic animated landing page (no client name exposed, platform-level stats)
-- Mentor connection flow on landing page and participant dashboard
-- Tested: 26/26 backend tests passed, all frontend flows verified
+- Futuristic animated landing page (platform-level stats: 12,400+)
+- Mentor connection flow on landing and participant dashboard
+- 26/26 backend tests passed
+
+### Mind-Blowing Demo Features (Latest)
+1. **ROI Projection Panel** — Enterprise dashboard shows cost-to-retrain vs cost-to-replace with projected annual savings
+2. **Risk Reduction Timeline** — Area chart showing At Risk % trending down and Rising % trending up over 6 months
+3. **Live Upskilling Progress Tracker** — Real-time view of 9 builder core members with progress bars, current domain, completion %
+4. **Growth Radar (Before vs Now)** — Spider/radar chart on worker diagnostic showing baseline assessment vs current skill dimensions with green growth deltas
+5. **AI Readiness Score** — Animated circular score on participant dashboard computed from task completion + submission quality
+6. **Skill Profile Radar** — 6-dimension spider chart on participant dashboard (AI Literacy, Data Analysis, Tool Proficiency, Strategic Thinking, Automation Design, Communication)
+7. **Achievement Milestones** — Gamified milestone system (First Task, Mentor Approval, Mentor Matched, Domain Mastered, Capstone, Cohort Top 3)
+8. **Video Placeholder** — Replaced Rick Astley embed with professional "Recording scheduled" placeholder
 
 ## Backlog
 | Task | Priority |

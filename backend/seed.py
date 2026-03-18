@@ -431,6 +431,25 @@ BUILDER_CORE = [
 ]
 
 
+SKILL_DIMENSION_NAMES = ["AI Literacy", "Data Analysis", "Tool Proficiency", "Strategic Thinking", "Automation Design", "Communication"]
+
+def generate_skill_dimensions(sa_score, displacement_category, in_training=False, progress_pct=0):
+    """Generate skill dimensions for a worker based on assessment scores."""
+    base_factor = (sa_score or 3.0) / 5.0
+    dims = {}
+    for i, name in enumerate(SKILL_DIMENSION_NAMES):
+        key = name.lower().replace(" ", "_")
+        noise = random.uniform(-0.4, 0.4)
+        baseline = round(max(1.0, min(5.0, (base_factor * 3.5) + noise + (0.5 if displacement_category == "rising" else -0.3 if displacement_category == "at_risk" else 0))), 2)
+        if in_training and progress_pct > 0:
+            growth = round(random.uniform(0.3, 1.5) * (progress_pct / 100), 2)
+            current = round(min(5.0, baseline + growth), 2)
+        else:
+            current = baseline
+        dims[key] = {"baseline": baseline, "current": current}
+    return dims
+
+
 def generate_worker_name(country, used_names):
     """Generate a unique worker name for a given country."""
     name_maps = {
@@ -522,6 +541,7 @@ async def run_seed(db, hash_password):
             "manager_top_quote": bc["manager_top_quote"],
             "manager_development_note": bc["manager_development_note"],
             "cohort_id": cohort_id,
+            "skill_dimensions": generate_skill_dimensions(bc["sa_score"], bc["displacement_category"], in_training=True, progress_pct=random.randint(25, 65)),
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         all_workers.append(worker)
@@ -607,6 +627,7 @@ async def run_seed(db, hash_password):
             "manager_top_quote": None,
             "manager_development_note": None,
             "cohort_id": None,
+            "skill_dimensions": generate_skill_dimensions(sa_score, cat),
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         all_workers.append(worker)
@@ -961,6 +982,49 @@ async def run_seed(db, hash_password):
                 "is_published": True
             }
             await db.tasks.insert_one(task)
+
+    # ===== Generate mini-curricula for other builder core participants =====
+    bc_curriculum_map = {
+        "Eugene McDermott": {"track": "AI-Enhanced Risk Intelligence", "domains": ["AI Risk Assessment", "Compliance Automation", "BCM with AI", "Capstone: Risk Intelligence"]},
+        "Karen McCulloch": {"track": "AI-Integrated Business Systems", "domains": ["AI for Enterprise Systems", "Process Automation", "Integration Design", "Capstone: Smart Systems"]},
+        "Carol Blackwood": {"track": "AI Data Strategy", "domains": ["AI-Augmented Analytics", "Data Governance", "ML Fundamentals", "Capstone: Data Strategy"]},
+        "Aftab Siddiqi": {"track": "AI-Powered Enterprise Systems", "domains": ["ERP AI Integration", "Process Mining", "Automation Design", "Capstone: Smart ERP"]},
+        "Ivan (Ho Wai) Tang": {"track": "AI-Augmented Web Services", "domains": ["AI UX Patterns", "Web AI Integration", "Performance AI", "Capstone: Smart Web"]},
+        "Charis Pringle": {"track": "AI Leadership for Application Services", "domains": ["AI Strategy", "Team AI Adoption", "AI Governance", "Capstone: AI Leadership"]},
+        "Kelly Donnet": {"track": "AI-Enhanced Infrastructure", "domains": ["AI Network Monitoring", "Predictive Infrastructure", "Cloud AI Ops", "Capstone: Smart Infra"]},
+    }
+    bc_task_templates = ["Foundation Concepts", "Practical Application", "Advanced Patterns", "Integration Exercise"]
+    for bc_name, curriculum in bc_curriculum_map.items():
+        bc_user = await db.users.find_one({"name": bc_name, "role": "participant"}, {"_id": 0})
+        if not bc_user:
+            continue
+        bc_domains = []
+        for j, dtitle in enumerate(curriculum["domains"]):
+            did = str(uuid.uuid4())
+            bc_domains.append({"id": did, "participant_id": bc_user["id"], "curriculum_id": f"{bc_name.lower().replace(' ','_')}_curriculum",
+                "title": dtitle, "description": f"Domain: {dtitle}",
+                "weight_pct": [35, 25, 25, 15][j], "order": j + 1, "why_assigned": f"Based on your assessment results.", "task_count": 4})
+        await db.domains.insert_many(bc_domains)
+        for j, d in enumerate(bc_domains):
+            for k, ttitle in enumerate(bc_task_templates):
+                await db.tasks.insert_one({
+                    "id": str(uuid.uuid4()), "domain_id": d["id"],
+                    "title": f"{d['title']}: {ttitle}", "description": f"Task {k+1} for {d['title']}.",
+                    "order": k + 1, "video_url": "https://www.youtube.com/embed/placeholder",
+                    "video_presenter": "Marcus Thompson, Former Meta Engineering Lead",
+                    "resources": [], "context_banner": f"Part of your {curriculum['track']} program.",
+                    "practical_scenario": f"Apply {ttitle.lower()} in an enterprise context.", "build_exercise": f"Complete the {ttitle.lower()} exercise.",
+                    "build_connection_to_capstone": "Connects to your capstone.", "is_published": True
+                })
+            # Add progress for first domain tasks (simulate partial completion)
+            if j == 0:
+                d_tasks = await db.tasks.find({"domain_id": d["id"]}, {"_id": 0}).sort("order", 1).to_list(4)
+                completed_count = random.randint(1, 3)
+                for ti, dt in enumerate(d_tasks):
+                    st = "completed" if ti < completed_count else ("in_progress" if ti == completed_count else "available")
+                    await db.progress.insert_one({"id": str(uuid.uuid4()), "user_id": bc_user["id"], "task_id": dt["id"],
+                        "domain_id": d["id"], "cohort_id": cohort_id, "status": st,
+                        "completed_at": datetime.now(timezone.utc).isoformat() if st == "completed" else None})
 
     # ===== Progress records =====
     anna_d1_tasks = await db.tasks.find({"domain_id": anna_d1_id}, {"_id": 0}).sort("order", 1).to_list(10)

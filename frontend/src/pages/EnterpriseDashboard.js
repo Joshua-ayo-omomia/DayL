@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
-import { BarChart3, Globe, Users, TrendingUp, Bell, LogOut, Map, Star, Layers, FileText, ArrowRight, ChevronRight } from "lucide-react";
+import { BarChart3, Globe, Users, TrendingUp, Bell, LogOut, Map, Star, Layers, FileText, ChevronRight, DollarSign, ShieldCheck, Activity } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const NAV_ITEMS = [
     { to: "/enterprise", icon: BarChart3, label: "Dashboard" },
@@ -182,6 +183,143 @@ export default function EnterpriseDashboard() {
                             </div>
                         </div>
                     </div>
+
+                    {/* ROI Projection + Risk Reduction side-by-side */}
+                    <div className="grid lg:grid-cols-2 gap-6">
+                        {/* ROI Panel */}
+                        <div className="bg-card border border-border/40 p-6" data-testid="roi-panel">
+                            <div className="flex items-center gap-2 mb-4">
+                                <DollarSign className="w-4 h-4 text-gray-600" />
+                                <h2 className="text-sm font-semibold text-white font-body">ROI Projection</h2>
+                            </div>
+                            {data?.roi_data && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-3 border border-green-500/20 bg-green-500/5">
+                                            <p className="text-xs text-gray-500 mb-1">Cost to Retrain</p>
+                                            <p className="text-lg font-bold text-green-400">${(data.roi_data.cost_to_retrain || 0).toLocaleString()}</p>
+                                            <p className="text-xs text-gray-600">{data.roi_data.workers_in_training} workers x ${(data.roi_data.retrain_cost_per_worker || 0).toLocaleString()}</p>
+                                        </div>
+                                        <div className="p-3 border border-red-500/20 bg-red-500/5">
+                                            <p className="text-xs text-gray-500 mb-1">Cost to Replace</p>
+                                            <p className="text-lg font-bold text-red-400">${(data.roi_data.cost_to_replace || 0).toLocaleString()}</p>
+                                            <p className="text-xs text-gray-600">{data.roi_data.workers_in_training} workers x ${(data.roi_data.external_hire_cost || 0).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 border border-white/10 bg-white/[0.02]">
+                                        <p className="text-xs text-gray-500 mb-1">Projected Annual Savings</p>
+                                        <p className="text-2xl font-bold text-white">${(data.roi_data.projected_annual_savings || 0).toLocaleString()}</p>
+                                        <p className="text-xs text-gray-600 mt-1">vs. external hiring and onboarding</p>
+                                    </div>
+                                    {data.roi_data.business_outcomes?.projected_hours_reclaimed_weekly && (
+                                        <div className="flex gap-3">
+                                            <div className="flex-1 text-center p-2 border border-white/5">
+                                                <p className="text-sm font-bold text-white">{data.roi_data.business_outcomes.projected_hours_reclaimed_weekly}h</p>
+                                                <p className="text-xs text-gray-600">Hours Reclaimed / Week</p>
+                                            </div>
+                                            <div className="flex-1 text-center p-2 border border-white/5">
+                                                <p className="text-sm font-bold text-white">{data.roi_data.business_outcomes.projected_speed_improvement_pct}%</p>
+                                                <p className="text-xs text-gray-600">Speed Improvement</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Risk Reduction Timeline */}
+                        <div className="bg-card border border-border/40 p-6" data-testid="risk-timeline">
+                            <div className="flex items-center gap-2 mb-4">
+                                <ShieldCheck className="w-4 h-4 text-gray-600" />
+                                <h2 className="text-sm font-semibold text-white font-body">Risk Reduction Trend</h2>
+                            </div>
+                            {data?.risk_timeline && (
+                                <div className="space-y-4">
+                                    <ResponsiveContainer width="100%" height={180}>
+                                        <AreaChart data={data.risk_timeline}>
+                                            <defs>
+                                                <linearGradient id="riskRed" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                                </linearGradient>
+                                                <linearGradient id="riskBlue" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <XAxis dataKey="month" tick={{ fill: "#4b5563", fontSize: 10 }} axisLine={false} tickLine={false} />
+                                            <YAxis tick={{ fill: "#4b5563", fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 50]} />
+                                            <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, fontSize: 12 }} />
+                                            <Area type="monotone" dataKey="at_risk_pct" name="At Risk %" stroke="#ef4444" fill="url(#riskRed)" strokeWidth={2} />
+                                            <Area type="monotone" dataKey="rising_pct" name="Rising %" stroke="#3b82f6" fill="url(#riskBlue)" strokeWidth={2} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                    <div className="flex justify-between px-2">
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="w-2 h-2 rounded-full bg-red-500" /> <span className="text-gray-500">At Risk</span>
+                                            <span className="text-red-400 font-mono">{data.risk_timeline[0]?.at_risk_pct}% → {data.risk_timeline[data.risk_timeline.length - 1]?.at_risk_pct}%</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="w-2 h-2 rounded-full bg-blue-500" /> <span className="text-gray-500">Rising</span>
+                                            <span className="text-blue-400 font-mono">{data.risk_timeline[0]?.rising_pct}% → {data.risk_timeline[data.risk_timeline.length - 1]?.rising_pct}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Live Upskilling Progress Tracker */}
+                    {data?.upskilling_progress?.length > 0 && (
+                        <div className="bg-card border border-border/40 p-6" data-testid="upskilling-tracker">
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2">
+                                    <Activity className="w-4 h-4 text-gray-600" />
+                                    <h2 className="text-sm font-semibold text-white font-body">Live Upskilling Progress</h2>
+                                    <span className="flex items-center gap-1 text-xs text-gray-600 ml-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Real-time
+                                    </span>
+                                </div>
+                                <Link to="/enterprise/builder-core" className="text-xs text-gray-500 hover:text-white transition-colors flex items-center gap-1">
+                                    View Full Builder Core <ChevronRight className="w-3 h-3" />
+                                </Link>
+                            </div>
+                            <div className="space-y-3">
+                                {data.upskilling_progress.map((p, i) => (
+                                    <motion.div key={p.worker_id}
+                                        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                                        className="flex items-center gap-4 py-3 border-b border-border/20 last:border-0">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-white/[0.04] border border-white/10 rounded-full flex items-center justify-center">
+                                            <span className="text-xs font-bold text-gray-400">{p.name?.charAt(0)}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <Link to={`/enterprise/worker/${p.worker_id}`} className="text-sm text-white hover:underline truncate">{p.name}</Link>
+                                                <span className={`text-xs px-1.5 py-0.5 flex-shrink-0 ${p.displacement_category === "rising" ? "text-blue-400 bg-blue-500/10" : p.displacement_category === "at_risk" ? "text-red-400 bg-red-500/10" : "text-gray-400 bg-gray-500/10"}`}>
+                                                    {p.displacement_category}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-600 truncate">{p.track_name} — {p.current_domain}</p>
+                                        </div>
+                                        <div className="flex-shrink-0 w-32">
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-gray-600">{p.completed_tasks}/{p.total_tasks} tasks</span>
+                                                <span className="text-white font-mono">{p.completion_pct}%</span>
+                                            </div>
+                                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div className="h-full bg-white rounded-full"
+                                                    initial={{ width: 0 }} animate={{ width: `${p.completion_pct}%` }}
+                                                    transition={{ duration: 1, delay: 0.3 + i * 0.1, ease: "easeOut" }} />
+                                            </div>
+                                        </div>
+                                        <div className="flex-shrink-0 text-right">
+                                            <p className="text-xs text-gray-400">{p.passed} <span className="text-gray-600">passed</span></p>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Two panels */}
                     <div className="grid lg:grid-cols-2 gap-6">

@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { EnterpriseSidebar } from "./EnterpriseDashboard";
 import { ArrowLeft, ChevronRight } from "lucide-react";
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend } from "recharts";
 
 const FLAG = { "Jamaica": "JM", "Canada": "CA", "USA": "US", "Barbados": "BB", "Trinidad and Tobago": "TT", "Curacao": "CW" };
 const DIR_COLOR = { rising: "text-blue-400 bg-blue-500/10 border-blue-500/20", stable: "text-gray-400 bg-gray-500/10 border-gray-500/20", at_risk: "text-red-400 bg-red-500/10 border-red-500/20" };
@@ -123,6 +124,40 @@ export default function WorkerDiagnostic() {
                             <p className="text-sm text-gray-400 mt-4 leading-relaxed">{w.displacement_interpretation}</p>
                         )}
                     </div>
+
+                    {/* Growth Radar: Before vs Now */}
+                    {w.skill_dimensions && Object.keys(w.skill_dimensions).length > 0 && (
+                        <div className="bg-card border border-border/40 p-6" data-testid="growth-radar">
+                            <h2 className="text-sm font-semibold text-white mb-1 font-body">Growth Analysis: Before vs Now</h2>
+                            <p className="text-xs text-gray-600 mb-4">Skill dimensions measured at assessment (baseline) compared to current progress through training.</p>
+                            <ResponsiveContainer width="100%" height={320}>
+                                <RadarChart data={Object.entries(w.skill_dimensions).map(([key, val]) => ({
+                                    dimension: key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+                                    baseline: val.baseline,
+                                    current: val.current,
+                                }))}>
+                                    <PolarGrid stroke="rgba(255,255,255,0.06)" />
+                                    <PolarAngleAxis dataKey="dimension" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                    <PolarRadiusAxis domain={[0, 5]} tick={{ fill: "#374151", fontSize: 9 }} axisLine={false} />
+                                    <Radar name="Assessment Baseline" dataKey="baseline" stroke="#6b7280" fill="#6b7280" fillOpacity={0.15} strokeWidth={1.5} strokeDasharray="4 4" />
+                                    <Radar name="Current" dataKey="current" stroke="#ffffff" fill="#ffffff" fillOpacity={0.1} strokeWidth={2} />
+                                    <Legend wrapperStyle={{ fontSize: 11, color: "#9ca3af" }} />
+                                </RadarChart>
+                            </ResponsiveContainer>
+                            <div className="grid grid-cols-3 gap-3 mt-4">
+                                {Object.entries(w.skill_dimensions).map(([key, val]) => {
+                                    const growth = val.current - val.baseline;
+                                    return (
+                                        <div key={key} className="text-center p-2 border border-white/5">
+                                            <p className="text-xs text-gray-600 capitalize">{key.replace(/_/g, " ")}</p>
+                                            <p className="text-sm font-bold text-white">{val.current.toFixed(1)}</p>
+                                            {growth > 0 && <p className="text-xs text-green-400">+{growth.toFixed(1)}</p>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Task Decomposition */}
                     {w.tasks && w.tasks.length > 0 && (

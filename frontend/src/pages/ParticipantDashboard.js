@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Bell, LogOut, BookOpen, MessageSquare, User, Clock, CheckCircle, ClipboardCheck, UserCheck, Video, Shield, ChevronRight, ArrowRight } from "lucide-react";
+import { Bell, LogOut, BookOpen, MessageSquare, User, Clock, CheckCircle, ClipboardCheck, UserCheck, Video, Shield, ChevronRight, ArrowRight, Award, Zap, Flag, Trophy, Star } from "lucide-react";
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 const STATUS_STYLE = { completed: "bg-green-500/10 text-green-400 border-green-500/20", in_progress: "bg-white/10 text-white border-white/20", available: "bg-gray-500/10 text-gray-400 border-gray-500/20", locked: "bg-gray-800 text-gray-600 border-gray-700" };
 
@@ -61,9 +62,14 @@ export default function ParticipantDashboard() {
     const activity = data?.activity || [];
     const submissions = data?.submissions || [];
     const unreadNotifs = notifications.filter(n => !n.read).length;
+    const aiReadiness = data?.ai_readiness || 0;
+    const skillDimensions = data?.skill_dimensions || {};
+    const achievements = data?.achievements || [];
 
     const passedSubmissions = submissions.filter(s => s.status === "pass").length;
     const pendingSubmissions = submissions.filter(s => s.status === "pending").length;
+
+    const ACHIEVEMENT_ICONS = { check: CheckCircle, star: Star, user: UserCheck, award: Award, zap: Zap, flag: Flag, trophy: Trophy };
 
     return (
         <div className="min-h-screen bg-background" data-testid="participant-dashboard">
@@ -135,6 +141,90 @@ export default function ParticipantDashboard() {
                             </div>
                         </motion.div>
                     )}
+
+                    {/* AI Readiness + Skill Radar + Achievements */}
+                    <div className="grid lg:grid-cols-3 gap-6">
+                        {/* AI Readiness Score */}
+                        <Reveal>
+                            <div className="bg-card/80 backdrop-blur-sm border border-white/5 p-6 flex flex-col items-center justify-center text-center" data-testid="ai-readiness-score">
+                                <p className="text-xs text-gray-600 tracking-widest uppercase mb-4">AI Readiness Score</p>
+                                <div className="relative w-32 h-32">
+                                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                                        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+                                        <motion.circle cx="50" cy="50" r="42" fill="none" stroke="#fff" strokeWidth="6" strokeLinecap="round"
+                                            strokeDasharray={`${2 * Math.PI * 42}`}
+                                            initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
+                                            animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - aiReadiness / 100) }}
+                                            transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }} />
+                                    </svg>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <motion.span className="text-3xl font-bold text-white font-mono"
+                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+                                            {aiReadiness}
+                                        </motion.span>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-3">
+                                    {aiReadiness >= 70 ? "Accelerating — strong trajectory" : aiReadiness >= 40 ? "Building momentum" : "Just getting started"}
+                                </p>
+                            </div>
+                        </Reveal>
+
+                        {/* Skill Radar Chart */}
+                        <Reveal delay={0.1}>
+                            <div className="bg-card/80 backdrop-blur-sm border border-white/5 p-5" data-testid="skill-radar">
+                                <p className="text-xs text-gray-600 tracking-widest uppercase mb-3">Skill Profile</p>
+                                {Object.keys(skillDimensions).length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={220}>
+                                        <RadarChart data={Object.entries(skillDimensions).map(([key, val]) => ({
+                                            dim: key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()).split(" ").map(w => w.slice(0, 4)).join(" "),
+                                            baseline: val.baseline,
+                                            current: val.current,
+                                            fullName: key.replace(/_/g, " "),
+                                        }))}>
+                                            <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                                            <PolarAngleAxis dataKey="dim" tick={{ fill: "#6b7280", fontSize: 9 }} />
+                                            <PolarRadiusAxis domain={[0, 5]} tick={false} axisLine={false} />
+                                            <Radar name="Baseline" dataKey="baseline" stroke="#4b5563" fill="#4b5563" fillOpacity={0.1} strokeDasharray="3 3" />
+                                            <Radar name="Current" dataKey="current" stroke="#fff" fill="#fff" fillOpacity={0.08} strokeWidth={2} />
+                                        </RadarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="h-[220px] flex items-center justify-center text-xs text-gray-600">Assessment data loading...</div>
+                                )}
+                                <div className="flex justify-center gap-4 mt-1 text-xs">
+                                    <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-500 inline-block" style={{borderTop:"2px dashed #4b5563"}} /> Baseline</span>
+                                    <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-white inline-block" /> Current</span>
+                                </div>
+                            </div>
+                        </Reveal>
+
+                        {/* Achievements */}
+                        <Reveal delay={0.2}>
+                            <div className="bg-card/80 backdrop-blur-sm border border-white/5 p-5" data-testid="achievements">
+                                <p className="text-xs text-gray-600 tracking-widest uppercase mb-4">Milestones</p>
+                                <div className="space-y-3">
+                                    {achievements.map((a, i) => {
+                                        const Icon = ACHIEVEMENT_ICONS[a.icon] || Award;
+                                        return (
+                                            <motion.div key={a.id}
+                                                initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.08 }}
+                                                className={`flex items-center gap-3 p-2.5 border transition-all duration-300 ${a.earned ? "border-white/10 bg-white/[0.02]" : "border-white/5 opacity-40"}`}>
+                                                <div className={`w-8 h-8 flex items-center justify-center border ${a.earned ? "border-white/20 bg-white/[0.05]" : "border-white/5"} rounded-full`}>
+                                                    <Icon className={`w-3.5 h-3.5 ${a.earned ? "text-white" : "text-gray-700"}`} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className={`text-xs font-medium ${a.earned ? "text-white" : "text-gray-600"}`}>{a.title}</p>
+                                                    {a.desc && <p className="text-xs text-gray-600">{a.desc}</p>}
+                                                </div>
+                                                {a.earned && <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />}
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </Reveal>
+                    </div>
 
                     {/* Program Section */}
                     <div>

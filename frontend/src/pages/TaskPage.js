@@ -176,9 +176,12 @@ export default function TaskPage() {
                         {task?.video_url && (
                             <div className="bg-card border border-border/40 p-4" data-testid="task-video">
                                 <h2 className="text-xs font-semibold text-gray-400 mb-2 font-body">Practitioner Briefing</h2>
-                                <div className="aspect-video bg-black rounded overflow-hidden">
-                                    <iframe src={task.video_url} className="w-full h-full" frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                                <div className="aspect-video bg-black/60 rounded overflow-hidden flex flex-col items-center justify-center relative border border-white/5">
+                                    <div className="w-16 h-16 rounded-full border-2 border-white/20 flex items-center justify-center mb-4">
+                                        <svg viewBox="0 0 24 24" className="w-7 h-7 text-white/40 ml-1" fill="currentColor"><polygon points="5,3 19,12 5,21" /></svg>
+                                    </div>
+                                    <p className="text-sm text-white/60 font-medium">Practitioner Briefing</p>
+                                    <p className="text-xs text-gray-600 mt-1">Recording scheduled — available at cohort launch</p>
                                 </div>
                                 {task.video_presenter && (
                                     <p className="text-xs text-gray-600 mt-2">Presented by {task.video_presenter}</p>
