@@ -12,9 +12,9 @@
         --card-foreground: 60 6% 93%;
         --popover: 0 0% 7%;
         --popover-foreground: 60 6% 93%;
-        --primary: 171 57% 40%;
-        --primary-foreground: 0 0% 100%;
-        --secondary: 44 76% 66%;
+        --primary: 0 0% 100%;
+        --primary-foreground: 0 0% 4%;
+        --secondary: 0 0% 83%;
         --secondary-foreground: 0 0% 4%;
         --muted: 0 0% 10%;
         --muted-foreground: 0 0% 65%;
@@ -24,13 +24,13 @@
         --destructive-foreground: 0 0% 100%;
         --border: 0 0% 18%;
         --input: 0 0% 18%;
-        --ring: 171 57% 40%;
+        --ring: 0 0% 100%;
         --radius: 0.5rem;
-        --chart-1: 171 57% 40%;
-        --chart-2: 44 76% 66%;
-        --chart-3: 16 69% 50%;
-        --chart-4: 199 89% 28%;
-        --chart-5: 0 0% 65%;
+        --chart-1: 217 91% 60%;
+        --chart-2: 220 9% 46%;
+        --chart-3: 0 84% 60%;
+        --chart-4: 142 71% 45%;
+        --chart-5: 38 92% 50%;
     }
 }
 
@@ -60,7 +60,6 @@ code {
     }
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -71,22 +70,20 @@ code {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #2A9D8F;
+    background: #525252;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #4DB6AC;
+    background: #737373;
 }
 
-/* Glass morphism effect */
 .glass {
     background: rgba(18, 18, 18, 0.7);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
 }
 
-/* Grain texture overlay */
 .grain::before {
     content: '';
     position: absolute;
@@ -99,7 +96,6 @@ code {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
-/* Veneer card effect */
 .veneer-card {
     position: relative;
     overflow: hidden;
@@ -118,25 +114,17 @@ code {
     opacity: 1;
 }
 
-/* Glow effect */
 .glow {
-    box-shadow: 0 0 20px -5px rgba(42, 157, 143, 0.3);
+    box-shadow: 0 0 20px -5px rgba(255, 255, 255, 0.15);
 }
 
 .glow-hover:hover {
-    box-shadow: 0 0 30px -5px rgba(42, 157, 143, 0.5);
+    box-shadow: 0 0 30px -5px rgba(255, 255, 255, 0.25);
 }
 
-/* Animation keyframes */
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
@@ -145,14 +133,8 @@ code {
 }
 
 @keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
 }
 
 .animate-fade-in-up {
@@ -167,20 +149,17 @@ code {
     animation: slideIn 0.4s ease-out forwards;
 }
 
-/* Stagger animation delays */
 .stagger-1 { animation-delay: 0.1s; }
 .stagger-2 { animation-delay: 0.2s; }
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
 .stagger-5 { animation-delay: 0.5s; }
 
-/* Selection color */
 ::selection {
-    background-color: rgba(42, 157, 143, 0.3);
+    background-color: rgba(255, 255, 255, 0.2);
     color: #EDEDE9;
 }
 
-/* Hide Emergent badge */
 #emergent-badge,
 a[href*="emergent.sh"],
 [class*="emergent"],
@@ -190,23 +169,15 @@ div[style*="Made with Emergent"] {
     opacity: 0 !important;
 }
 
-/* Focus states */
 *:focus-visible {
-    outline: 2px solid #2A9D8F;
+    outline: 2px solid #FFFFFF;
     outline-offset: 2px;
 }
 
-/* Custom checkbox styling */
 input[type="checkbox"] {
-    accent-color: #2A9D8F;
+    accent-color: #FFFFFF;
 }
 
-/* Progress bar animation */
 .progress-bar {
     transition: width 0.5s ease-out;
-}
-
-/* Spiral motif SVG background */
-.spiral-bg {
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10 Q45 15 45 30 Q45 45 30 50 Q15 45 15 30 Q15 15 30 10' stroke='%232A9D8F' stroke-width='0.5' fill='none' opacity='0.03'/%3E%3C/svg%3E");
 }

@@ -37,14 +37,12 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
             return;
         }
-
         try {
             const response = await axios.get(`${API_URL}/auth/me`, {
                 headers: { Authorization: `Bearer ${storedToken}` }
             });
             setUser(response.data);
         } catch (error) {
-            console.error('Failed to fetch user:', error);
             localStorage.removeItem('token');
             setToken(null);
             setUser(null);
@@ -66,12 +64,10 @@ export const AuthProvider = ({ children }) => {
         return userData;
     };
 
-    const register = async (name, email, password, invitationCode) => {
+    const register = async (name, email, password, accessCode) => {
         const response = await axios.post(`${API_URL}/auth/register`, {
-            name,
-            email,
-            password,
-            invitation_code: invitationCode || undefined
+            name, email, password,
+            enterprise_access_code: accessCode || undefined
         });
         const { token: newToken, user: userData } = response.data;
         localStorage.setItem('token', newToken);
@@ -91,15 +87,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     const value = {
-        user,
-        loading,
-        login,
-        register,
-        logout,
-        api,
+        user, loading, login, register, logout, api,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin' || user?.role === 'super_admin',
-        isReviewer: user?.role === 'reviewer' || user?.role === 'admin' || user?.role === 'super_admin',
+        isAdmin: user?.role === 'super_admin',
+        isEnterprise: user?.role === 'enterprise_admin' || user?.role === 'super_admin',
+        isMentor: user?.role === 'mentor',
+        isParticipant: user?.role === 'participant',
         refreshUser
     };
 

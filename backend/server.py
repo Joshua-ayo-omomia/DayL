@@ -1,9 +1,9 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 import os
 import logging
 from pathlib import Path
@@ -13,181 +13,72 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
-import asyncio
 import json
-import aiofiles
+import io
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfgen import canvas
-from reportlab.lib.colors import Color
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-import anthropic
-import resend
-import PyPDF2
-from docx import Document
-import io
+from reportlab.lib.colors import Color, HexColor
+from reportlab.lib.units import inch
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# API Keys
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
-JWT_SECRET = os.environ.get('JWT_SECRET', 'daylearning_secret')
+JWT_SECRET = os.environ.get('JWT_SECRET', 'realloc_secret_2026')
 
-# Configure Resend
-resend.api_key = RESEND_API_KEY
-
-# Create uploads directory
 UPLOAD_DIR = ROOT_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 CERTIFICATES_DIR = ROOT_DIR / "certificates"
 CERTIFICATES_DIR.mkdir(exist_ok=True)
 
-# Create the main app
-app = FastAPI(title="Day Learning API")
+app = FastAPI(title="Realloc API")
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # ============== MODELS ==============
 
-class ApplicationCreate(BaseModel):
-    full_name: str
+class UserLogin(BaseModel):
     email: EmailStr
-    phone: Optional[str] = None
-    linkedin_url: Optional[str] = None
-    brief: Optional[str] = None
-    why_join: str
-    experience_years: str
-    skill_area: str
-    commitment: bool = True
-
-class Application(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    full_name: str
-    email: EmailStr
-    phone: Optional[str] = None
-    linkedin_url: Optional[str] = None
-    resume_url: Optional[str] = None
-    brief: Optional[str] = None
-    why_join: str
-    experience_years: str
-    skill_area: str
-    commitment: bool = True
-    ai_screening_result: Optional[Dict[str, Any]] = None
-    status: str = "pending_review"
-    invitation_code: Optional[str] = None
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    password: str
 
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
-    invitation_code: Optional[str] = None
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-class User(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    email: EmailStr
-    password_hash: str
-    name: str
-    role: str = "student"
-    profile_photo: Optional[str] = None
-    application_id: Optional[str] = None
-    onboarding_completed: bool = False
-    onboarding_items: Dict[str, bool] = Field(default_factory=lambda: {
-        "code_of_conduct": False,
-        "how_it_works": False,
-        "dev_environment": False,
-        "join_community": False,
-        "confirm_commitment": False
-    })
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-
-class Track(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    description: str
-    icon: str = "code"
-    is_active: bool = True
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-
-class Module(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    track_id: str
-    title: str
-    description: str
-    order: int
-    video_url: str
-    resources: List[Dict[str, str]] = []
-    has_assessment: bool = False
-    assessment_prompt: Optional[str] = None
-    is_published: bool = True
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-
-class ModuleCreate(BaseModel):
-    track_id: str
-    title: str
-    description: str
-    order: int
-    video_url: str
-    resources: List[Dict[str, str]] = []
-    has_assessment: bool = False
-    assessment_prompt: Optional[str] = None
-    is_published: bool = True
-
-class StudentProgress(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    module_id: str
-    status: str = "locked"
-    completed_at: Optional[str] = None
+    enterprise_access_code: Optional[str] = None
 
 class SubmissionCreate(BaseModel):
-    module_id: str
+    task_id: str
+    domain_id: str
     title: str
     description: str
     project_url: str
     notes: Optional[str] = None
-
-class Submission(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    module_id: str
-    title: str
-    description: str
-    project_url: str
-    screenshots: List[str] = []
-    notes: Optional[str] = None
-    status: str = "pending"
-    admin_feedback: Optional[str] = None
-    reviewed_by: Optional[str] = None
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    reviewed_at: Optional[str] = None
 
 class SubmissionReview(BaseModel):
     status: str
     admin_feedback: str
 
-class Certificate(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    track_id: str
-    issued_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    certificate_url: Optional[str] = None
+class ThreadCreate(BaseModel):
+    task_id: Optional[str] = None
+    cohort_id: Optional[str] = None
+    content: str
+
+class ReplyCreate(BaseModel):
+    content: str
+
+class BusinessCaseCreate(BaseModel):
+    problem: str
+    current_state: str
+    proposed_solution: str
+    outcome_category: str
+    projected_impact: Dict[str, Any]
 
 # ============== AUTH HELPERS ==============
 
@@ -218,24 +109,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Invalid token")
 
 async def require_admin(user: dict = Depends(get_current_user)):
-    if user["role"] not in ["admin", "super_admin"]:
+    if user["role"] not in ["super_admin", "enterprise_admin"]:
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
-async def require_reviewer(user: dict = Depends(get_current_user)):
-    if user["role"] not in ["admin", "super_admin", "reviewer"]:
-        raise HTTPException(status_code=403, detail="Reviewer access required")
+async def require_enterprise(user: dict = Depends(get_current_user)):
+    if user["role"] not in ["super_admin", "enterprise_admin"]:
+        raise HTTPException(status_code=403, detail="Enterprise access required")
+    return user
+
+async def require_mentor(user: dict = Depends(get_current_user)):
+    if user["role"] not in ["super_admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Mentor access required")
     return user
 
 # ============== PUBLIC ROUTES ==============
 
-@api_router.get("/")
-async def root():
-    return {"message": "Day Learning API", "status": "running"}
-
 @api_router.get("/health")
 async def health():
-    return {"status": "healthy"}
+    return {"status": "healthy", "platform": "Realloc"}
 
 # ============== AUTH ROUTES ==============
 
@@ -244,46 +136,45 @@ async def register(user_data: UserCreate):
     existing = await db.users.find_one({"email": user_data.email}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
-    role = "student"
-    application_id = None
-    
-    if user_data.invitation_code:
-        application = await db.applications.find_one({"invitation_code": user_data.invitation_code}, {"_id": 0})
-        if not application:
-            raise HTTPException(status_code=400, detail="Invalid invitation code")
-        if application["status"] != "approved":
-            raise HTTPException(status_code=400, detail="Application not approved")
-        application_id = application["id"]
-    
-    user = User(
-        email=user_data.email,
-        password_hash=hash_password(user_data.password),
-        name=user_data.name,
-        role=role,
-        application_id=application_id
-    )
-    
-    await db.users.insert_one(user.model_dump())
-    token = create_token(user.id, user.role)
-    
-    return {"token": token, "user": {"id": user.id, "email": user.email, "name": user.name, "role": user.role}}
+
+    user_doc = {
+        "id": str(uuid.uuid4()),
+        "email": user_data.email,
+        "password_hash": hash_password(user_data.password),
+        "name": user_data.name,
+        "role": "participant",
+        "enterprise_id": None,
+        "cohort_id": None,
+        "mentor_id": None,
+        "personalized_track_name": None,
+        "worker_id": None,
+        "onboarding_completed": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    await db.users.insert_one(user_doc)
+    token = create_token(user_doc["id"], user_doc["role"])
+    return {"token": token, "user": {k: v for k, v in user_doc.items() if k not in ["password_hash", "_id"]}}
 
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     if not user or not verify_password(credentials.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+
     token = create_token(user["id"], user["role"])
     return {
-        "token": token, 
+        "token": token,
         "user": {
-            "id": user["id"], 
-            "email": user["email"], 
-            "name": user["name"], 
+            "id": user["id"],
+            "email": user["email"],
+            "name": user["name"],
             "role": user["role"],
-            "onboarding_completed": user.get("onboarding_completed", False)
+            "enterprise_id": user.get("enterprise_id"),
+            "cohort_id": user.get("cohort_id"),
+            "worker_id": user.get("worker_id"),
+            "personalized_track_name": user.get("personalized_track_name"),
+            "onboarding_completed": user.get("onboarding_completed", True)
         }
     }
 
@@ -294,484 +185,479 @@ async def get_me(user: dict = Depends(get_current_user)):
         "email": user["email"],
         "name": user["name"],
         "role": user["role"],
-        "onboarding_completed": user.get("onboarding_completed", False),
-        "onboarding_items": user.get("onboarding_items", {}),
-        "profile_photo": user.get("profile_photo")
+        "enterprise_id": user.get("enterprise_id"),
+        "cohort_id": user.get("cohort_id"),
+        "mentor_id": user.get("mentor_id"),
+        "worker_id": user.get("worker_id"),
+        "personalized_track_name": user.get("personalized_track_name"),
+        "onboarding_completed": user.get("onboarding_completed", True)
     }
 
-# ============== APPLICATION ROUTES ==============
+# ============== ENTERPRISE ROUTES ==============
 
-@api_router.post("/applications")
-async def create_application(
-    full_name: str = Form(...),
-    email: str = Form(...),
-    phone: Optional[str] = Form(None),
-    linkedin_url: Optional[str] = Form(None),
-    brief: Optional[str] = Form(None),
-    why_join: str = Form(...),
-    experience_years: str = Form(...),
-    skill_area: str = Form(...),
-    commitment: bool = Form(True),
-    resume: Optional[UploadFile] = File(None)
-):
-    existing = await db.applications.find_one({"email": email}, {"_id": 0})
-    if existing:
-        raise HTTPException(status_code=400, detail="Application already exists for this email")
-    
-    resume_url = None
-    if resume:
-        file_ext = Path(resume.filename).suffix
-        file_name = f"{uuid.uuid4()}{file_ext}"
-        file_path = UPLOAD_DIR / file_name
-        async with aiofiles.open(file_path, 'wb') as f:
-            content = await resume.read()
-            await f.write(content)
-        resume_url = f"/api/uploads/{file_name}"
-    
-    if not resume_url and not brief:
-        raise HTTPException(status_code=400, detail="Either resume or brief is required")
-    
-    application = Application(
-        full_name=full_name,
-        email=email,
-        phone=phone,
-        linkedin_url=linkedin_url,
-        resume_url=resume_url,
-        brief=brief,
-        why_join=why_join,
-        experience_years=experience_years,
-        skill_area=skill_area,
-        commitment=commitment
-    )
-    
-    await db.applications.insert_one(application.model_dump())
-    return {"message": "Application submitted successfully", "id": application.id}
+@api_router.get("/enterprise/{enterprise_id}/dashboard")
+async def enterprise_dashboard(enterprise_id: str, user: dict = Depends(require_enterprise)):
+    enterprise = await db.enterprises.find_one({"id": enterprise_id}, {"_id": 0})
+    if not enterprise:
+        raise HTTPException(status_code=404, detail="Enterprise not found")
 
-@api_router.get("/applications")
-async def get_applications(
-    status: Optional[str] = None,
-    user: dict = Depends(require_admin)
-):
-    query = {}
-    if status:
-        query["status"] = status
-    applications = await db.applications.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return applications
+    total_workers = await db.workers.count_documents({"enterprise_id": enterprise_id})
+    rising = await db.workers.count_documents({"enterprise_id": enterprise_id, "displacement_category": "rising"})
+    stable = await db.workers.count_documents({"enterprise_id": enterprise_id, "displacement_category": "stable"})
+    at_risk = await db.workers.count_documents({"enterprise_id": enterprise_id, "displacement_category": "at_risk"})
 
-@api_router.get("/applications/{application_id}")
-async def get_application(application_id: str, user: dict = Depends(require_admin)):
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    return application
+    sa_completed = await db.workers.count_documents({"enterprise_id": enterprise_id, "sa_status": "completed"})
+    completion_rate = round(sa_completed / total_workers * 100) if total_workers > 0 else 0
 
-@api_router.post("/applications/{application_id}/screen")
-async def screen_application(application_id: str, user: dict = Depends(require_admin)):
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    
-    await db.applications.update_one({"id": application_id}, {"$set": {"status": "under_ai_review"}})
-    
-    # Extract resume text if available
-    resume_text = "No resume uploaded"
-    if application.get('resume_url'):
-        try:
-            # Get the filename from the URL
-            resume_filename = application['resume_url'].split('/')[-1]
-            resume_path = UPLOAD_DIR / resume_filename
-            
-            if resume_path.exists():
-                file_ext = resume_path.suffix.lower()
-                
-                if file_ext == '.pdf':
-                    # Extract text from PDF
-                    with open(resume_path, 'rb') as f:
-                        pdf_reader = PyPDF2.PdfReader(f)
-                        resume_text = ""
-                        for page in pdf_reader.pages:
-                            resume_text += page.extract_text() + "\n"
-                        resume_text = resume_text.strip()
-                        if not resume_text:
-                            resume_text = "PDF uploaded but text could not be extracted (may be image-based)"
-                
-                elif file_ext == '.docx':
-                    # Extract text from DOCX
-                    doc = Document(resume_path)
-                    resume_text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
-                    if not resume_text:
-                        resume_text = "DOCX uploaded but no text content found"
-                
-                else:
-                    resume_text = f"Resume uploaded ({file_ext} file) but format not supported for text extraction"
-            else:
-                resume_text = "Resume file not found on server"
-                
-        except Exception as e:
-            logger.error(f"Error extracting resume text: {e}")
-            resume_text = f"Resume uploaded but extraction failed: {str(e)}"
-    
-    # Truncate resume text if too long (keep first 3000 chars)
-    if len(resume_text) > 3000:
-        resume_text = resume_text[:3000] + "\n... [truncated for length]"
-    
-    screening_prompt = f"""You are screening applicants for Day Learning, an AI training program for experienced professionals.
+    cohorts = await db.cohorts.find({"enterprise_id": enterprise_id}, {"_id": 0}).to_list(10)
+    active_cohorts = len([c for c in cohorts if c.get("status") == "active"])
 
-We are looking for people who:
-- Have real professional experience in their field (minimum 1 year)
-- Can demonstrate they have actually built or delivered real work (not just completed tutorials or courses)
-- Show commitment and motivation to learn AI skills
-- Have a growth mindset and clear goals
+    builder_core = await db.workers.find(
+        {"enterprise_id": enterprise_id, "builder_classification": {"$in": ["Core Builder", "Emerging Builder"]}},
+        {"_id": 0}
+    ).sort("mv_score", -1).limit(5).to_list(5)
 
-We are NOT looking for:
-- Complete beginners with no professional experience
-- People who only list course completions with no real work
-- Vague applications with no substance
-- People whose resume doesn't match their stated experience
+    active_cohort = next((c for c in cohorts if c.get("status") == "active"), None)
 
-=== APPLICATION FORM RESPONSES ===
-- Name: {application['full_name']}
-- Email: {application['email']}
-- Years of Experience: {application['experience_years']}
-- Primary Skill Area: {application['skill_area']}
-- Why they want to join Day Learning: {application['why_join']}
-- Self-written Brief/Background: {application.get('brief', 'Not provided')}
-- LinkedIn: {application.get('linkedin_url', 'Not provided')}
-
-=== RESUME/CV CONTENT ===
-{resume_text}
-
-=== YOUR TASK ===
-Analyze BOTH the application form responses AND the resume content. Look for:
-1. Consistency between what they claim and what their resume shows
-2. Evidence of real projects, employment, or deliverables
-3. Relevant skills and experience for AI training
-4. Red flags like exaggerated claims, vague descriptions, or mismatches
-5. Overall quality and professionalism of their application
-
-Return a JSON response:
-{{
-  "decision": "approve" | "reject" | "maybe",
-  "confidence": 0-100,
-  "reasoning": "2-3 sentence explanation of your decision",
-  "resume_analysis": "Brief analysis of their resume quality and relevance",
-  "consistency_check": "Do their form responses match their resume? Any discrepancies?",
-  "strengths": ["list of 2-4 strengths"],
-  "concerns": ["list of concerns if any, or empty array"],
-  "suggested_track": "AI Engineer"
-}}
-
-Return ONLY the JSON, no other text."""
-
-    try:
-        client_anthropic = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        message = client_anthropic.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1500,
-            messages=[{"role": "user", "content": screening_prompt}]
-        )
-        
-        response_text = message.content[0].text.strip()
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
-        
-        ai_result = json.loads(response_text)
-        
-        await db.applications.update_one(
-            {"id": application_id},
-            {"$set": {"ai_screening_result": ai_result, "status": "ai_reviewed"}}
-        )
-        
-        return {"message": "AI screening completed", "result": ai_result}
-    except Exception as e:
-        logger.error(f"AI screening error: {e}")
-        await db.applications.update_one({"id": application_id}, {"$set": {"status": "pending_review"}})
-        raise HTTPException(status_code=500, detail=f"AI screening failed: {str(e)}")
-
-@api_router.post("/applications/{application_id}/approve")
-async def approve_application(application_id: str, user: dict = Depends(require_admin)):
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    
-    invitation_code = str(uuid.uuid4())[:8].upper()
-    
-    await db.applications.update_one(
-        {"id": application_id},
-        {"$set": {"status": "approved", "invitation_code": invitation_code}}
-    )
-    
-    try:
-        email_html = f"""
-        <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #EDEDE9; padding: 40px;">
-            <h1 style="color: #2A9D8F; font-family: 'Playfair Display', serif;">Congratulations! 🎉</h1>
-            <p>Dear {application['full_name']},</p>
-            <p>We're thrilled to inform you that you've been accepted to <strong>Day Learning's AI Engineer Track</strong>!</p>
-            <p>Your application demonstrated exactly what we're looking for: real experience, genuine passion, and the drive to grow.</p>
-            <h2 style="color: #E9C46A;">Next Steps:</h2>
-            <ol>
-                <li>Use your invitation code to create your account: <strong style="color: #2A9D8F;">{invitation_code}</strong></li>
-                <li>Complete the onboarding checklist</li>
-                <li>Start your AI engineering journey!</li>
-            </ol>
-            <p style="margin-top: 30px;">Welcome to the Day Learning community.</p>
-            <p><em>The Day Learning Team at THCO</em></p>
-        </div>
-        """
-        
-        await asyncio.to_thread(
-            resend.Emails.send,
-            {
-                "from": SENDER_EMAIL,
-                "to": [application["email"]],
-                "subject": "Congratulations! You've been accepted to Day Learning 🎉",
-                "html": email_html
-            }
-        )
-    except Exception as e:
-        logger.error(f"Email sending failed: {e}")
-    
-    return {"message": "Application approved", "invitation_code": invitation_code}
-
-@api_router.post("/applications/{application_id}/reject")
-async def reject_application(application_id: str, user: dict = Depends(require_admin)):
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    
-    await db.applications.update_one({"id": application_id}, {"$set": {"status": "rejected"}})
-    
-    try:
-        email_html = f"""
-        <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #EDEDE9; padding: 40px;">
-            <h1 style="color: #E76F51;">Application Update</h1>
-            <p>Dear {application['full_name']},</p>
-            <p>Thank you for your interest in Day Learning. After careful review, we've decided not to move forward with your application at this time.</p>
-            <p>This doesn't mean the end of your journey. We encourage you to:</p>
-            <ul>
-                <li>Continue building and shipping projects</li>
-                <li>Gain more hands-on experience</li>
-                <li>Reapply in the future when you have more experience to share</li>
-            </ul>
-            <p>Keep building, keep learning.</p>
-            <p><em>The Day Learning Team at THCO</em></p>
-        </div>
-        """
-        
-        await asyncio.to_thread(
-            resend.Emails.send,
-            {
-                "from": SENDER_EMAIL,
-                "to": [application["email"]],
-                "subject": "Day Learning Application Update",
-                "html": email_html
-            }
-        )
-    except Exception as e:
-        logger.error(f"Email sending failed: {e}")
-    
-    return {"message": "Application rejected"}
-
-# ============== TRACK & MODULE ROUTES ==============
-
-@api_router.get("/tracks")
-async def get_tracks():
-    tracks = await db.tracks.find({"is_active": True}, {"_id": 0}).to_list(100)
-    return tracks
-
-@api_router.get("/tracks/{track_id}")
-async def get_track(track_id: str):
-    track = await db.tracks.find_one({"id": track_id}, {"_id": 0})
-    if not track:
-        raise HTTPException(status_code=404, detail="Track not found")
-    return track
-
-@api_router.post("/tracks")
-async def create_track(track: Track, user: dict = Depends(require_admin)):
-    await db.tracks.insert_one(track.model_dump())
-    return track
-
-@api_router.get("/modules")
-async def get_modules(track_id: Optional[str] = None):
-    query = {"is_published": True}
-    if track_id:
-        query["track_id"] = track_id
-    modules = await db.modules.find(query, {"_id": 0}).sort("order", 1).to_list(100)
-    return modules
-
-@api_router.get("/modules/{module_id}")
-async def get_module(module_id: str):
-    module = await db.modules.find_one({"id": module_id}, {"_id": 0})
-    if not module:
-        raise HTTPException(status_code=404, detail="Module not found")
-    return module
-
-@api_router.post("/modules")
-async def create_module(module_data: ModuleCreate, user: dict = Depends(require_admin)):
-    module = Module(**module_data.model_dump())
-    await db.modules.insert_one(module.model_dump())
-    return module
-
-@api_router.put("/modules/{module_id}")
-async def update_module(module_id: str, module_data: ModuleCreate, user: dict = Depends(require_admin)):
-    result = await db.modules.update_one(
-        {"id": module_id},
-        {"$set": module_data.model_dump()}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Module not found")
-    return {"message": "Module updated"}
-
-@api_router.delete("/modules/{module_id}")
-async def delete_module(module_id: str, user: dict = Depends(require_admin)):
-    result = await db.modules.delete_one({"id": module_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Module not found")
-    return {"message": "Module deleted"}
-
-# ============== ONBOARDING ROUTES ==============
-
-@api_router.put("/onboarding/item/{item_key}")
-async def update_onboarding_item(item_key: str, user: dict = Depends(get_current_user)):
-    valid_items = ["code_of_conduct", "how_it_works", "dev_environment", "join_community", "confirm_commitment"]
-    if item_key not in valid_items:
-        raise HTTPException(status_code=400, detail="Invalid onboarding item")
-    
-    onboarding_items = user.get("onboarding_items", {})
-    onboarding_items[item_key] = True
-    
-    all_completed = all(onboarding_items.get(item, False) for item in valid_items)
-    
-    await db.users.update_one(
-        {"id": user["id"]},
-        {"$set": {"onboarding_items": onboarding_items, "onboarding_completed": all_completed}}
-    )
-    
-    if all_completed:
-        track = await db.tracks.find_one({"is_active": True}, {"_id": 0})
-        if track:
-            modules = await db.modules.find({"track_id": track["id"], "is_published": True}, {"_id": 0}).sort("order", 1).to_list(100)
-            for i, module in enumerate(modules):
-                existing = await db.progress.find_one({"user_id": user["id"], "module_id": module["id"]}, {"_id": 0})
-                if not existing:
-                    progress = StudentProgress(
-                        user_id=user["id"],
-                        module_id=module["id"],
-                        status="available" if i == 0 else "locked"
-                    )
-                    await db.progress.insert_one(progress.model_dump())
-    
-    return {"message": "Onboarding item updated", "onboarding_completed": all_completed}
-
-@api_router.get("/onboarding/status")
-async def get_onboarding_status(user: dict = Depends(get_current_user)):
     return {
-        "onboarding_items": user.get("onboarding_items", {}),
-        "onboarding_completed": user.get("onboarding_completed", False)
+        "enterprise": enterprise,
+        "stats": {
+            "total_workers": total_workers,
+            "countries": len(enterprise.get("countries", [])),
+            "active_cohorts": active_cohorts,
+            "completion_rate": completion_rate
+        },
+        "displacement": {"rising": rising, "stable": stable, "at_risk": at_risk},
+        "builder_core_preview": builder_core,
+        "active_cohort": active_cohort,
+        "cohorts": cohorts
     }
 
-# ============== PROGRESS ROUTES ==============
+@api_router.get("/enterprise/{enterprise_id}/heatmap")
+async def enterprise_heatmap(
+    enterprise_id: str,
+    country: Optional[str] = None,
+    department: Optional[str] = None,
+    category: Optional[str] = None,
+    user: dict = Depends(require_enterprise)
+):
+    query = {"enterprise_id": enterprise_id}
+    if country:
+        query["country"] = country
+    if department:
+        query["department"] = department
+    if category:
+        query["displacement_category"] = category
 
-@api_router.get("/progress")
-async def get_progress(user: dict = Depends(get_current_user)):
-    progress = await db.progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
-    return progress
+    workers = await db.workers.find(query, {
+        "_id": 0, "id": 1, "name": 1, "role_title": 1, "department": 1,
+        "country": 1, "sa_score": 1, "mv_score": 1, "displacement_direction_score": 1,
+        "displacement_category": 1, "sa_status": 1, "mv_status": 1
+    }).to_list(1000)
 
-@api_router.post("/progress/{module_id}/complete")
-async def complete_module(module_id: str, user: dict = Depends(get_current_user)):
-    progress = await db.progress.find_one({"user_id": user["id"], "module_id": module_id}, {"_id": 0})
-    if not progress:
-        raise HTTPException(status_code=404, detail="Progress not found")
-    
-    if progress["status"] != "available" and progress["status"] != "in_progress":
-        raise HTTPException(status_code=400, detail="Module not available")
-    
-    module = await db.modules.find_one({"id": module_id}, {"_id": 0})
-    if module and module.get("has_assessment"):
-        submission = await db.submissions.find_one(
-            {"user_id": user["id"], "module_id": module_id, "status": "pass"},
+    total = len(workers)
+    rising = len([w for w in workers if w.get("displacement_category") == "rising"])
+    stable = len([w for w in workers if w.get("displacement_category") == "stable"])
+    at_risk = len([w for w in workers if w.get("displacement_category") == "at_risk"])
+
+    all_workers_count = await db.workers.count_documents({"enterprise_id": enterprise_id})
+
+    countries = await db.workers.distinct("country", {"enterprise_id": enterprise_id})
+    departments = await db.workers.distinct("department", {"enterprise_id": enterprise_id})
+
+    return {
+        "workers": workers,
+        "summary": {"showing": total, "total": all_workers_count, "rising": rising, "stable": stable, "at_risk": at_risk},
+        "filters": {"countries": sorted(countries), "departments": sorted(departments)}
+    }
+
+@api_router.get("/enterprise/{enterprise_id}/workers/{worker_id}")
+async def get_worker(enterprise_id: str, worker_id: str, user: dict = Depends(require_enterprise)):
+    worker = await db.workers.find_one({"id": worker_id, "enterprise_id": enterprise_id}, {"_id": 0})
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker not found")
+
+    cohort = None
+    if worker.get("cohort_id"):
+        cohort = await db.cohorts.find_one({"id": worker["cohort_id"]}, {"_id": 0})
+
+    return {"worker": worker, "cohort": cohort}
+
+@api_router.get("/enterprise/{enterprise_id}/builder-core")
+async def get_builder_core(enterprise_id: str, user: dict = Depends(require_enterprise)):
+    workers = await db.workers.find(
+        {"enterprise_id": enterprise_id, "builder_classification": {"$in": ["Core Builder", "Emerging Builder", "Core Builder (behavioral)", "Core Builder (role-based)"]}},
+        {"_id": 0}
+    ).sort("mv_score", -1).to_list(50)
+
+    return {"candidates": workers}
+
+@api_router.get("/enterprise/{enterprise_id}/cohorts")
+async def get_cohorts(enterprise_id: str, user: dict = Depends(require_enterprise)):
+    cohorts = await db.cohorts.find({"enterprise_id": enterprise_id}, {"_id": 0}).to_list(20)
+
+    for cohort in cohorts:
+        participant_count = await db.users.count_documents({"cohort_id": cohort["id"], "role": "participant"})
+        cohort["participant_count"] = participant_count
+        mentors = await db.mentors.find({"assigned_cohort_ids": cohort["id"]}, {"_id": 0, "name": 1, "credential": 1}).to_list(5)
+        cohort["mentors"] = mentors
+
+    return {"cohorts": cohorts}
+
+@api_router.get("/enterprise/{enterprise_id}/cohorts/{cohort_id}")
+async def get_cohort_detail(enterprise_id: str, cohort_id: str, user: dict = Depends(require_enterprise)):
+    cohort = await db.cohorts.find_one({"id": cohort_id, "enterprise_id": enterprise_id}, {"_id": 0})
+    if not cohort:
+        raise HTTPException(status_code=404, detail="Cohort not found")
+
+    participants = await db.users.find(
+        {"cohort_id": cohort_id, "role": "participant"},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(50)
+
+    for p in participants:
+        worker = await db.workers.find_one({"id": p.get("worker_id")}, {"_id": 0, "name": 1, "role_title": 1, "country": 1, "displacement_category": 1})
+        if worker:
+            p["worker"] = worker
+        domains = await db.domains.find({"participant_id": p["id"]}, {"_id": 0}).sort("order", 1).to_list(10)
+        total_tasks = 0
+        completed_tasks = 0
+        for d in domains:
+            tasks = await db.tasks.find({"domain_id": d["id"]}, {"_id": 0}).to_list(20)
+            total_tasks += len(tasks)
+            for t in tasks:
+                prog = await db.progress.find_one({"user_id": p["id"], "task_id": t["id"]}, {"_id": 0})
+                if prog and prog.get("status") == "completed":
+                    completed_tasks += 1
+        p["progress"] = {"completed": completed_tasks, "total": total_tasks}
+
+    mentors = await db.mentors.find({"assigned_cohort_ids": cohort_id}, {"_id": 0}).to_list(5)
+
+    country_dist = {}
+    for p in participants:
+        w = p.get("worker", {})
+        c = w.get("country", "Unknown")
+        country_dist[c] = country_dist.get(c, 0) + 1
+
+    return {
+        "cohort": cohort,
+        "participants": participants,
+        "mentors": mentors,
+        "composition": {"country_distribution": country_dist, "total": len(participants)}
+    }
+
+# ============== BOARD REPORT ==============
+
+@api_router.get("/enterprise/{enterprise_id}/report")
+async def generate_board_report(enterprise_id: str, user: dict = Depends(require_enterprise)):
+    enterprise = await db.enterprises.find_one({"id": enterprise_id}, {"_id": 0})
+    if not enterprise:
+        raise HTTPException(status_code=404, detail="Enterprise not found")
+
+    total = await db.workers.count_documents({"enterprise_id": enterprise_id})
+    rising = await db.workers.count_documents({"enterprise_id": enterprise_id, "displacement_category": "rising"})
+    stable = await db.workers.count_documents({"enterprise_id": enterprise_id, "displacement_category": "stable"})
+    at_risk = await db.workers.count_documents({"enterprise_id": enterprise_id, "displacement_category": "at_risk"})
+    sa_done = await db.workers.count_documents({"enterprise_id": enterprise_id, "sa_status": "completed"})
+
+    builder_core = await db.workers.find(
+        {"enterprise_id": enterprise_id, "builder_classification": {"$in": ["Core Builder", "Emerging Builder", "Core Builder (behavioral)", "Core Builder (role-based)"]}},
+        {"_id": 0, "name": 1, "role_title": 1, "department": 1, "sa_score": 1, "mv_score": 1, "builder_classification": 1, "displacement_direction_score": 1}
+    ).sort("mv_score", -1).limit(10).to_list(10)
+
+    cohort = await db.cohorts.find_one({"enterprise_id": enterprise_id, "status": "active"}, {"_id": 0})
+
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=letter)
+    w, h = letter
+
+    # Page 1: Title
+    c.setFillColor(HexColor("#0A0A0A"))
+    c.rect(0, 0, w, h, fill=1)
+
+    c.setFillColor(HexColor("#FFFFFF"))
+    c.setFont("Helvetica-Bold", 28)
+    c.drawString(50, h - 80, "REALLOC")
+
+    c.setFont("Helvetica", 12)
+    c.setFillColor(HexColor("#A6A6A6"))
+    c.drawString(50, h - 100, "Workforce Reallocation Infrastructure")
+
+    c.setFillColor(HexColor("#FFFFFF"))
+    c.setFont("Helvetica-Bold", 22)
+    c.drawString(50, h - 180, f"{enterprise['name']}")
+    c.setFont("Helvetica", 14)
+    c.drawString(50, h - 205, "Technology Capability Assessment Report")
+
+    c.setFillColor(HexColor("#A6A6A6"))
+    c.setFont("Helvetica", 11)
+    c.drawString(50, h - 250, f"Date: {datetime.now(timezone.utc).strftime('%B %d, %Y')}")
+    c.drawString(50, h - 268, f"Workers Assessed: {total}")
+    c.drawString(50, h - 286, f"Countries: {len(enterprise.get('countries', []))}")
+    c.drawString(50, h - 304, f"Assessment Completion: {round(sa_done/total*100) if total else 0}%")
+
+    # Executive Summary
+    y = h - 370
+    c.setFillColor(HexColor("#FFFFFF"))
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "Executive Summary")
+    y -= 30
+
+    c.setFont("Helvetica", 11)
+    c.setFillColor(HexColor("#D4D4D4"))
+    lines = [
+        f"Realloc assessed {total} technology workers across {len(enterprise.get('countries', []))} countries.",
+        f"Displacement analysis: {rising} Rising, {stable} Stable, {at_risk} At Risk.",
+        f"Assessment completion rate: {round(sa_done/total*100) if total else 0}%.",
+        "",
+        "Displacement Distribution:",
+        f"  Rising (roles specializing): {rising} workers ({round(rising/total*100)}%)",
+        f"  Stable (monitoring required): {stable} workers ({round(stable/total*100)}%)",
+        f"  At Risk (roles commoditizing): {at_risk} workers ({round(at_risk/total*100)}%)",
+    ]
+    for line in lines:
+        c.drawString(50, y, line)
+        y -= 16
+
+    # Builder Core
+    y -= 20
+    c.setFillColor(HexColor("#FFFFFF"))
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "Builder Core: Top 10 Candidates")
+    y -= 25
+
+    c.setFont("Helvetica-Bold", 9)
+    c.setFillColor(HexColor("#A6A6A6"))
+    c.drawString(50, y, "NAME")
+    c.drawString(220, y, "ROLE")
+    c.drawString(420, y, "SA")
+    c.drawString(450, y, "MV")
+    c.drawString(480, y, "CLASSIFICATION")
+    y -= 15
+
+    c.setFont("Helvetica", 9)
+    c.setFillColor(HexColor("#D4D4D4"))
+    for bc in builder_core:
+        c.drawString(50, y, bc.get("name", "")[:25])
+        c.drawString(220, y, bc.get("role_title", "")[:30])
+        c.drawString(420, y, str(bc.get("sa_score", "-")))
+        c.drawString(450, y, str(bc.get("mv_score", "-")))
+        c.drawString(480, y, bc.get("builder_classification", ""))
+        y -= 14
+
+    # Page 2
+    c.showPage()
+    c.setFillColor(HexColor("#0A0A0A"))
+    c.rect(0, 0, w, h, fill=1)
+
+    y = h - 60
+    c.setFillColor(HexColor("#FFFFFF"))
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "Cohort 1 Plan")
+    y -= 30
+
+    c.setFont("Helvetica", 11)
+    c.setFillColor(HexColor("#D4D4D4"))
+    if cohort:
+        cohort_lines = [
+            f"Participants: {len(cohort.get('participant_ids', []))}",
+            f"Start Date: {cohort.get('start_date', 'TBD')}",
+            f"Location: {cohort.get('location', 'TBD')}",
+            f"Duration: {cohort.get('total_weeks', 12)} weeks",
+            "",
+            "Projected Business Outcomes:",
+            f"  Cost Savings: ${cohort.get('business_outcomes', {}).get('projected_cost_savings_annual', 0):,}/year",
+            f"  Hours Reclaimed: {cohort.get('business_outcomes', {}).get('projected_hours_reclaimed_weekly', 0)}/week",
+            f"  Speed Improvement: {cohort.get('business_outcomes', {}).get('projected_speed_improvement_pct', 0)}%",
+        ]
+    else:
+        cohort_lines = ["No active cohort data available."]
+
+    for line in cohort_lines:
+        c.drawString(50, y, line)
+        y -= 16
+
+    y -= 30
+    c.setFillColor(HexColor("#FFFFFF"))
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "Timeline")
+    y -= 25
+
+    c.setFont("Helvetica", 11)
+    c.setFillColor(HexColor("#D4D4D4"))
+    timeline = [
+        "Assessment Phase: December 2025 - March 2026",
+        "Cohort 1: April - June 2026",
+        "Outcome Measurement: July 2026",
+        "Cohort 2 Planning: July 2026",
+        "Cohort 2 Launch: July 2026",
+        "Full Year: 4 cohorts planned for 2026",
+    ]
+    for line in timeline:
+        c.drawString(50, y, line)
+        y -= 16
+
+    y -= 30
+    c.setFillColor(HexColor("#A6A6A6"))
+    c.setFont("Helvetica", 9)
+    c.drawString(50, y, "Generated by Realloc. Workforce reallocation infrastructure for the AI era.")
+    c.drawString(50, y - 14, "A THCO Company.")
+
+    c.save()
+    buf.seek(0)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=realloc_board_report_{enterprise['name'].replace(' ', '_')}.pdf"}
+    )
+
+# ============== LEARN (PARTICIPANT) ROUTES ==============
+
+@api_router.get("/learn/dashboard")
+async def learn_dashboard(user: dict = Depends(get_current_user)):
+    worker = None
+    if user.get("worker_id"):
+        worker = await db.workers.find_one({"id": user["worker_id"]}, {"_id": 0})
+
+    domains = await db.domains.find({"participant_id": user["id"]}, {"_id": 0}).sort("order", 1).to_list(10)
+
+    for domain in domains:
+        tasks = await db.tasks.find({"domain_id": domain["id"]}, {"_id": 0}).sort("order", 1).to_list(20)
+        completed = 0
+        for t in tasks:
+            prog = await db.progress.find_one({"user_id": user["id"], "task_id": t["id"]}, {"_id": 0})
+            if prog and prog.get("status") == "completed":
+                completed += 1
+        domain["tasks_completed"] = completed
+        domain["tasks_total"] = len(tasks)
+
+    submissions = await db.submissions.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+
+    mentor = None
+    if user.get("mentor_id"):
+        mentor = await db.mentors.find_one({"id": user["mentor_id"]}, {"_id": 0})
+
+    next_session = None
+    if user.get("mentor_id"):
+        next_session = await db.mentor_sessions.find_one(
+            {"participant_id": user["id"], "status": "scheduled"},
             {"_id": 0}
         )
-        if not submission:
-            raise HTTPException(status_code=400, detail="Assessment required before completion")
-    
-    await db.progress.update_one(
-        {"user_id": user["id"], "module_id": module_id},
-        {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    
-    all_modules = await db.modules.find({"track_id": module["track_id"]}, {"_id": 0}).sort("order", 1).to_list(100)
-    current_index = next((i for i, m in enumerate(all_modules) if m["id"] == module_id), -1)
-    
-    if current_index < len(all_modules) - 1:
-        next_module = all_modules[current_index + 1]
-        await db.progress.update_one(
-            {"user_id": user["id"], "module_id": next_module["id"]},
-            {"$set": {"status": "available"}}
-        )
-    
-    return {"message": "Module completed"}
 
-@api_router.post("/progress/{module_id}/start")
-async def start_module(module_id: str, user: dict = Depends(get_current_user)):
-    progress = await db.progress.find_one({"user_id": user["id"], "module_id": module_id}, {"_id": 0})
-    if not progress:
-        raise HTTPException(status_code=404, detail="Progress not found")
-    
-    if progress["status"] == "locked":
-        raise HTTPException(status_code=400, detail="Module is locked")
-    
-    if progress["status"] == "available":
-        await db.progress.update_one(
-            {"user_id": user["id"], "module_id": module_id},
-            {"$set": {"status": "in_progress"}}
-        )
-    
-    return {"message": "Module started"}
+    activity = []
+    if user.get("cohort_id"):
+        activity = await db.activity_feed.find(
+            {"cohort_id": user["cohort_id"]},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(10).to_list(10)
 
-# ============== SUBMISSION ROUTES ==============
+    return {
+        "user": {"name": user["name"], "role": user.get("role"), "personalized_track_name": user.get("personalized_track_name")},
+        "worker": worker,
+        "domains": domains,
+        "submissions": submissions,
+        "mentor": mentor,
+        "next_session": next_session,
+        "activity": activity
+    }
+
+@api_router.get("/learn/diagnostic")
+async def learn_diagnostic(user: dict = Depends(get_current_user)):
+    if not user.get("worker_id"):
+        raise HTTPException(status_code=404, detail="No diagnostic data available")
+
+    worker = await db.workers.find_one({"id": user["worker_id"]}, {"_id": 0})
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker profile not found")
+
+    safe_worker = {k: v for k, v in worker.items() if k not in [
+        "manager_top_quote", "manager_development_note", "builder_classification"
+    ]}
+    return {"diagnostic": safe_worker}
+
+@api_router.get("/learn/domains")
+async def get_participant_domains(user: dict = Depends(get_current_user)):
+    domains = await db.domains.find({"participant_id": user["id"]}, {"_id": 0}).sort("order", 1).to_list(10)
+    for domain in domains:
+        tasks = await db.tasks.find({"domain_id": domain["id"]}, {"_id": 0, "id": 1, "title": 1, "order": 1}).sort("order", 1).to_list(20)
+        domain["tasks"] = tasks
+    return {"domains": domains}
+
+@api_router.get("/learn/domains/{domain_id}/tasks")
+async def get_domain_tasks(domain_id: str, user: dict = Depends(get_current_user)):
+    domain = await db.domains.find_one({"id": domain_id}, {"_id": 0})
+    if not domain:
+        raise HTTPException(status_code=404, detail="Domain not found")
+    tasks = await db.tasks.find({"domain_id": domain_id}, {"_id": 0}).sort("order", 1).to_list(20)
+
+    for t in tasks:
+        prog = await db.progress.find_one({"user_id": user["id"], "task_id": t["id"]}, {"_id": 0})
+        t["progress_status"] = prog.get("status", "locked") if prog else "locked"
+        sub = await db.submissions.find_one({"user_id": user["id"], "task_id": t["id"]}, {"_id": 0})
+        t["submission"] = sub
+
+    return {"domain": domain, "tasks": tasks}
+
+@api_router.get("/learn/domains/{domain_id}/tasks/{task_id}")
+async def get_task_detail(domain_id: str, task_id: str, user: dict = Depends(get_current_user)):
+    task = await db.tasks.find_one({"id": task_id, "domain_id": domain_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    domain = await db.domains.find_one({"id": domain_id}, {"_id": 0})
+    progress = await db.progress.find_one({"user_id": user["id"], "task_id": task_id}, {"_id": 0})
+    submissions = await db.submissions.find({"user_id": user["id"], "task_id": task_id}, {"_id": 0}).sort("created_at", -1).to_list(10)
+    threads = await db.discussion_threads.find({"task_id": task_id}, {"_id": 0}).sort("created_at", -1).to_list(20)
+
+    return {
+        "task": task,
+        "domain": domain,
+        "progress": progress,
+        "submissions": submissions,
+        "threads": threads
+    }
+
+# ============== SUBMISSIONS ==============
 
 @api_router.post("/submissions")
-async def create_submission(
-    module_id: str = Form(...),
-    title: str = Form(...),
-    description: str = Form(...),
-    project_url: str = Form(...),
-    notes: Optional[str] = Form(None),
-    screenshots: List[UploadFile] = File([]),
-    user: dict = Depends(get_current_user)
-):
-    screenshot_urls = []
-    for screenshot in screenshots[:3]:
-        file_ext = Path(screenshot.filename).suffix
-        file_name = f"{uuid.uuid4()}{file_ext}"
-        file_path = UPLOAD_DIR / file_name
-        async with aiofiles.open(file_path, 'wb') as f:
-            content = await screenshot.read()
-            await f.write(content)
-        screenshot_urls.append(f"/api/uploads/{file_name}")
-    
-    submission = Submission(
-        user_id=user["id"],
-        module_id=module_id,
-        title=title,
-        description=description,
-        project_url=project_url,
-        screenshots=screenshot_urls,
-        notes=notes
+async def create_submission(data: SubmissionCreate, user: dict = Depends(get_current_user)):
+    existing = await db.submissions.find({"user_id": user["id"], "task_id": data.task_id}, {"_id": 0}).to_list(10)
+    review_cycle = len(existing) + 1
+
+    submission = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "task_id": data.task_id,
+        "domain_id": data.domain_id,
+        "cohort_id": user.get("cohort_id"),
+        "title": data.title,
+        "description": data.description,
+        "project_url": data.project_url,
+        "notes": data.notes,
+        "status": "pending",
+        "admin_feedback": None,
+        "reviewer_name": None,
+        "reviewer_credential": None,
+        "review_cycle": review_cycle,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "reviewed_at": None
+    }
+
+    await db.submissions.insert_one(submission)
+    del submission["_id"]
+
+    await db.progress.update_one(
+        {"user_id": user["id"], "task_id": data.task_id},
+        {"$set": {"status": "in_progress"}},
+        upsert=True
     )
-    
-    await db.submissions.insert_one(submission.model_dump())
-    return {"message": "Submission created", "id": submission.id}
+
+    return {"message": "Submission created", "id": submission["id"]}
 
 @api_router.get("/submissions")
-async def get_submissions(
-    status: Optional[str] = None,
-    user: dict = Depends(get_current_user)
-):
-    if user["role"] in ["admin", "super_admin", "reviewer"]:
+async def get_submissions(status: Optional[str] = None, user: dict = Depends(get_current_user)):
+    if user["role"] in ["super_admin", "enterprise_admin", "mentor"]:
         query = {}
         if status:
             query["status"] = status
@@ -780,222 +666,259 @@ async def get_submissions(
         submissions = await db.submissions.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return submissions
 
-@api_router.get("/submissions/{submission_id}")
-async def get_submission(submission_id: str, user: dict = Depends(get_current_user)):
-    submission = await db.submissions.find_one({"id": submission_id}, {"_id": 0})
-    if not submission:
-        raise HTTPException(status_code=404, detail="Submission not found")
-    
-    if user["role"] not in ["admin", "super_admin", "reviewer"] and submission["user_id"] != user["id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    return submission
-
 @api_router.post("/submissions/{submission_id}/review")
-async def review_submission(
-    submission_id: str,
-    review: SubmissionReview,
-    user: dict = Depends(require_reviewer)
-):
+async def review_submission(submission_id: str, review: SubmissionReview, user: dict = Depends(get_current_user)):
+    if user["role"] not in ["super_admin", "mentor", "enterprise_admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     submission = await db.submissions.find_one({"id": submission_id}, {"_id": 0})
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
-    
-    if review.status not in ["pass", "needs_work", "fail"]:
-        raise HTTPException(status_code=400, detail="Invalid status")
-    
+
+    mentor_info = await db.mentors.find_one({"user_id": user["id"]}, {"_id": 0})
+
     await db.submissions.update_one(
         {"id": submission_id},
         {"$set": {
             "status": review.status,
             "admin_feedback": review.admin_feedback,
-            "reviewed_by": user["id"],
+            "reviewer_name": mentor_info["name"] if mentor_info else user["name"],
+            "reviewer_credential": mentor_info.get("credential") if mentor_info else None,
             "reviewed_at": datetime.now(timezone.utc).isoformat()
         }}
     )
-    
+
     if review.status == "pass":
         await db.progress.update_one(
-            {"user_id": submission["user_id"], "module_id": submission["module_id"]},
+            {"user_id": submission["user_id"], "task_id": submission["task_id"]},
             {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc).isoformat()}}
         )
-        
-        module = await db.modules.find_one({"id": submission["module_id"]}, {"_id": 0})
-        if module:
-            all_modules = await db.modules.find({"track_id": module["track_id"]}, {"_id": 0}).sort("order", 1).to_list(100)
-            current_index = next((i for i, m in enumerate(all_modules) if m["id"] == module["id"]), -1)
-            
-            if current_index < len(all_modules) - 1:
-                next_module = all_modules[current_index + 1]
-                await db.progress.update_one(
-                    {"user_id": submission["user_id"], "module_id": next_module["id"]},
-                    {"$set": {"status": "available"}}
-                )
-    
+
     return {"message": "Submission reviewed"}
 
-# ============== CERTIFICATE ROUTES ==============
+# ============== COMMUNITY ==============
 
-@api_router.post("/certificates/generate")
-async def generate_certificate(user: dict = Depends(get_current_user)):
-    track = await db.tracks.find_one({"is_active": True}, {"_id": 0})
-    if not track:
-        raise HTTPException(status_code=404, detail="No active track found")
-    
-    modules = await db.modules.find({"track_id": track["id"], "is_published": True}, {"_id": 0}).to_list(100)
-    progress = await db.progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
-    
-    completed_modules = [p for p in progress if p["status"] == "completed"]
-    if len(completed_modules) < len(modules):
-        raise HTTPException(status_code=400, detail="Not all modules completed")
-    
-    existing_cert = await db.certificates.find_one({"user_id": user["id"], "track_id": track["id"]}, {"_id": 0})
-    if existing_cert:
-        return {"certificate_url": existing_cert["certificate_url"]}
-    
-    cert_id = str(uuid.uuid4())
-    cert_filename = f"certificate_{cert_id}.pdf"
-    cert_path = CERTIFICATES_DIR / cert_filename
-    
-    c = canvas.Canvas(str(cert_path), pagesize=landscape(letter))
-    width, height = landscape(letter)
-    
-    c.setFillColor(Color(10/255, 10/255, 10/255))
-    c.rect(0, 0, width, height, fill=1)
-    
-    c.setFillColor(Color(42/255, 157/255, 143/255))
-    c.rect(30, 30, width-60, height-60, stroke=1, fill=0)
-    c.setStrokeColor(Color(42/255, 157/255, 143/255))
-    c.setLineWidth(2)
-    c.rect(30, 30, width-60, height-60, stroke=1, fill=0)
-    
-    c.setFillColor(Color(237/255, 237/255, 233/255))
-    c.setFont("Helvetica-Bold", 48)
-    c.drawCentredString(width/2, height - 120, "CERTIFICATE OF COMPLETION")
-    
-    c.setFont("Helvetica", 20)
-    c.drawCentredString(width/2, height - 180, "This certifies that")
-    
-    c.setFillColor(Color(233/255, 196/255, 106/255))
-    c.setFont("Helvetica-Bold", 36)
-    c.drawCentredString(width/2, height - 230, user["name"])
-    
-    c.setFillColor(Color(237/255, 237/255, 233/255))
-    c.setFont("Helvetica", 20)
-    c.drawCentredString(width/2, height - 280, "has successfully completed the")
-    
-    c.setFillColor(Color(42/255, 157/255, 143/255))
-    c.setFont("Helvetica-Bold", 32)
-    c.drawCentredString(width/2, height - 330, track["name"])
-    
-    c.setFillColor(Color(237/255, 237/255, 233/255))
-    c.setFont("Helvetica", 18)
-    c.drawCentredString(width/2, height - 370, "at Day Learning by THCO")
-    
-    issue_date = datetime.now(timezone.utc).strftime("%B %d, %Y")
-    c.setFont("Helvetica", 14)
-    c.drawCentredString(width/2, 80, f"Issued on {issue_date}")
-    
-    c.setFont("Helvetica", 12)
-    c.setFillColor(Color(166/255, 166/255, 166/255))
-    c.drawCentredString(width/2, 50, f"Certificate ID: {cert_id}")
-    
-    c.save()
-    
-    certificate = Certificate(
-        id=cert_id,
-        user_id=user["id"],
-        track_id=track["id"],
-        certificate_url=f"/api/certificates/{cert_filename}"
+@api_router.get("/community/feed")
+async def get_community_feed(cohort_id: Optional[str] = None, user: dict = Depends(get_current_user)):
+    query = {}
+    if cohort_id:
+        query["cohort_id"] = cohort_id
+    elif user.get("cohort_id"):
+        query["cohort_id"] = user["cohort_id"]
+    feed = await db.activity_feed.find(query, {"_id": 0}).sort("created_at", -1).limit(30).to_list(30)
+    return {"feed": feed}
+
+@api_router.get("/community/threads")
+async def get_threads(task_id: Optional[str] = None, cohort_id: Optional[str] = None, user: dict = Depends(get_current_user)):
+    query = {}
+    if task_id:
+        query["task_id"] = task_id
+    if cohort_id:
+        query["cohort_id"] = cohort_id
+    threads = await db.discussion_threads.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return {"threads": threads}
+
+@api_router.post("/community/threads")
+async def create_thread(data: ThreadCreate, user: dict = Depends(get_current_user)):
+    thread = {
+        "id": str(uuid.uuid4()),
+        "task_id": data.task_id,
+        "cohort_id": data.cohort_id or user.get("cohort_id"),
+        "author_id": user["id"],
+        "author_name": user["name"],
+        "author_role": user["role"],
+        "content": data.content,
+        "replies": [],
+        "upvotes": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.discussion_threads.insert_one(thread)
+    del thread["_id"]
+    return thread
+
+@api_router.post("/community/threads/{thread_id}/replies")
+async def add_reply(thread_id: str, data: ReplyCreate, user: dict = Depends(get_current_user)):
+    mentor_info = await db.mentors.find_one({"user_id": user["id"]}, {"_id": 0})
+    reply = {
+        "id": str(uuid.uuid4()),
+        "author_id": user["id"],
+        "author_name": user["name"],
+        "author_role": user["role"],
+        "author_credential": mentor_info.get("credential") if mentor_info else None,
+        "content": data.content,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.discussion_threads.update_one({"id": thread_id}, {"$push": {"replies": reply}})
+    return reply
+
+@api_router.get("/community/hub")
+async def community_hub():
+    mentors = await db.mentors.find({"is_active": True}, {"_id": 0}).to_list(10)
+    return {"mentors": mentors}
+
+# ============== MENTOR / SESSIONS ==============
+
+@api_router.get("/mentor/dashboard")
+async def mentor_dashboard(user: dict = Depends(require_mentor)):
+    mentor = await db.mentors.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor profile not found")
+
+    pending_subs = await db.submissions.find({"status": "pending"}, {"_id": 0}).sort("created_at", -1).to_list(50)
+
+    sessions = await db.mentor_sessions.find(
+        {"mentor_id": mentor["id"]},
+        {"_id": 0}
+    ).sort("date", -1).to_list(20)
+
+    cohort_ids = mentor.get("assigned_cohort_ids", [])
+    participants = []
+    for cid in cohort_ids:
+        ps = await db.users.find({"cohort_id": cid, "role": "participant"}, {"_id": 0, "password_hash": 0}).to_list(50)
+        participants.extend(ps)
+
+    return {
+        "mentor": mentor,
+        "pending_submissions": pending_subs,
+        "sessions": sessions,
+        "participants": participants
+    }
+
+@api_router.get("/sessions")
+async def get_sessions(
+    participant_id: Optional[str] = None,
+    mentor_id: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    query = {}
+    if participant_id:
+        query["participant_id"] = participant_id
+    elif mentor_id:
+        query["mentor_id"] = mentor_id
+    elif user["role"] == "participant":
+        query["participant_id"] = user["id"]
+    elif user["role"] == "mentor":
+        mentor = await db.mentors.find_one({"user_id": user["id"]}, {"_id": 0})
+        if mentor:
+            query["mentor_id"] = mentor["id"]
+
+    sessions = await db.mentor_sessions.find(query, {"_id": 0}).sort("date", -1).to_list(50)
+    return {"sessions": sessions}
+
+@api_router.get("/learn/mentor")
+async def get_my_mentor(user: dict = Depends(get_current_user)):
+    if not user.get("mentor_id"):
+        return {"mentor": None, "sessions": [], "reviews": []}
+
+    mentor = await db.mentors.find_one({"id": user["mentor_id"]}, {"_id": 0})
+    sessions = await db.mentor_sessions.find(
+        {"participant_id": user["id"]},
+        {"_id": 0}
+    ).sort("date", -1).to_list(20)
+
+    reviews = await db.submissions.find(
+        {"user_id": user["id"], "status": {"$ne": "pending"}},
+        {"_id": 0}
+    ).sort("reviewed_at", -1).to_list(20)
+
+    return {"mentor": mentor, "sessions": sessions, "reviews": reviews}
+
+# ============== NOTIFICATIONS ==============
+
+@api_router.get("/notifications")
+async def get_notifications(user: dict = Depends(get_current_user)):
+    notifications = await db.notifications.find(
+        {"user_id": user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    return {"notifications": notifications}
+
+# ============== BUSINESS CASES ==============
+
+@api_router.get("/business-cases")
+async def get_business_cases(user: dict = Depends(get_current_user)):
+    cases = await db.business_cases.find({"participant_id": user["id"]}, {"_id": 0}).to_list(10)
+    return {"cases": cases}
+
+@api_router.post("/business-cases")
+async def create_business_case(data: BusinessCaseCreate, user: dict = Depends(get_current_user)):
+    case = {
+        "id": str(uuid.uuid4()),
+        "participant_id": user["id"],
+        "cohort_id": user.get("cohort_id"),
+        "problem": data.problem,
+        "current_state": data.current_state,
+        "proposed_solution": data.proposed_solution,
+        "outcome_category": data.outcome_category,
+        "projected_impact": data.projected_impact,
+        "status": "draft",
+        "mentor_approved": False,
+        "mentor_feedback": None,
+        "actual_impact": None,
+        "measured_at": None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.business_cases.insert_one(case)
+    del case["_id"]
+    return case
+
+@api_router.put("/business-cases/{case_id}")
+async def update_business_case(case_id: str, data: BusinessCaseCreate, user: dict = Depends(get_current_user)):
+    await db.business_cases.update_one(
+        {"id": case_id, "participant_id": user["id"]},
+        {"$set": {
+            "problem": data.problem,
+            "current_state": data.current_state,
+            "proposed_solution": data.proposed_solution,
+            "outcome_category": data.outcome_category,
+            "projected_impact": data.projected_impact
+        }}
     )
-    await db.certificates.insert_one(certificate.model_dump())
-    
-    return {"certificate_url": certificate.certificate_url, "id": cert_id}
-
-@api_router.get("/certificates/{filename}")
-async def get_certificate_file(filename: str):
-    file_path = CERTIFICATES_DIR / filename
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Certificate not found")
-    return FileResponse(file_path, media_type="application/pdf", filename=filename)
-
-@api_router.get("/certificates")
-async def get_user_certificates(user: dict = Depends(get_current_user)):
-    certificates = await db.certificates.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
-    return certificates
+    return {"message": "Business case updated"}
 
 # ============== ADMIN ROUTES ==============
 
-@api_router.get("/admin/students")
-async def get_students(user: dict = Depends(require_admin)):
-    students = await db.users.find({"role": "student"}, {"_id": 0, "password_hash": 0}).to_list(1000)
-    
-    for student in students:
-        progress = await db.progress.find({"user_id": student["id"]}, {"_id": 0}).to_list(100)
-        completed = len([p for p in progress if p["status"] == "completed"])
-        total = len(progress)
-        student["progress"] = {"completed": completed, "total": total}
-    
-    return students
-
 @api_router.get("/admin/analytics")
 async def get_analytics(user: dict = Depends(require_admin)):
-    total_applications = await db.applications.count_documents({})
-    approved_applications = await db.applications.count_documents({"status": "approved"})
-    rejected_applications = await db.applications.count_documents({"status": "rejected"})
-    pending_applications = await db.applications.count_documents({"status": {"$in": ["pending_review", "ai_reviewed"]}})
-    
-    total_students = await db.users.count_documents({"role": "student"})
-    onboarded_students = await db.users.count_documents({"role": "student", "onboarding_completed": True})
-    
-    total_submissions = await db.submissions.count_documents({})
-    passed_submissions = await db.submissions.count_documents({"status": "pass"})
-    pending_submissions = await db.submissions.count_documents({"status": "pending"})
-    
-    total_certificates = await db.certificates.count_documents({})
-    
+    enterprises = await db.enterprises.count_documents({})
+    total_workers = await db.workers.count_documents({})
+    active_cohorts = await db.cohorts.count_documents({"status": "active"})
+
+    rising = await db.workers.count_documents({"displacement_category": "rising"})
+    stable = await db.workers.count_documents({"displacement_category": "stable"})
+    at_risk = await db.workers.count_documents({"displacement_category": "at_risk"})
+
     return {
-        "applications": {
-            "total": total_applications,
-            "approved": approved_applications,
-            "rejected": rejected_applications,
-            "pending": pending_applications,
-            "approval_rate": round(approved_applications / total_applications * 100, 1) if total_applications > 0 else 0
-        },
-        "students": {
-            "total": total_students,
-            "onboarded": onboarded_students,
-            "onboarding_rate": round(onboarded_students / total_students * 100, 1) if total_students > 0 else 0
-        },
-        "submissions": {
-            "total": total_submissions,
-            "passed": passed_submissions,
-            "pending": pending_submissions,
-            "pass_rate": round(passed_submissions / total_submissions * 100, 1) if total_submissions > 0 else 0
-        },
-        "certificates": {
-            "total": total_certificates
-        }
+        "enterprises": enterprises,
+        "total_workers": total_workers,
+        "active_cohorts": active_cohorts,
+        "displacement": {"rising": rising, "stable": stable, "at_risk": at_risk}
     }
 
-@api_router.put("/admin/users/{user_id}/role")
-async def update_user_role(user_id: str, role: str, admin: dict = Depends(require_admin)):
-    if admin["role"] != "super_admin":
-        raise HTTPException(status_code=403, detail="Only super admin can change roles")
-    
-    if role not in ["student", "admin", "super_admin", "reviewer"]:
-        raise HTTPException(status_code=400, detail="Invalid role")
-    
-    result = await db.users.update_one({"id": user_id}, {"$set": {"role": role}})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {"message": "Role updated"}
+# ============== SEED ==============
 
-@api_router.get("/admin/users")
-async def get_all_users(user: dict = Depends(require_admin)):
-    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
-    return users
+@api_router.post("/seed")
+async def seed_data():
+    existing = await db.enterprises.find_one({}, {"_id": 0})
+    if existing:
+        return {"message": "Seed data already exists"}
+
+    from seed import run_seed
+    result = await run_seed(db, hash_password)
+    return result
+
+@api_router.post("/seed/reset")
+async def reset_and_seed():
+    collections = ["enterprises", "workers", "cohorts", "mentors", "domains", "tasks",
+                    "users", "submissions", "progress", "discussion_threads", "mentor_sessions",
+                    "activity_feed", "notifications", "business_cases", "certificates",
+                    "applications", "modules", "tracks", "student_progress"]
+    for col in collections:
+        await db[col].drop()
+
+    from seed import run_seed
+    result = await run_seed(db, hash_password)
+    return result
 
 # ============== FILE SERVING ==============
 
@@ -1006,87 +929,12 @@ async def get_upload(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path)
 
-# ============== SEED DATA ==============
-
-@api_router.post("/seed")
-async def seed_data():
-    existing_track = await db.tracks.find_one({"name": "AI Engineer"}, {"_id": 0})
-    if existing_track:
-        return {"message": "Seed data already exists"}
-    
-    track = Track(
-        name="AI Engineer",
-        description="Learn to build and deploy AI-powered solutions. For developers who want to leverage AI in their work.",
-        icon="cpu"
-    )
-    await db.tracks.insert_one(track.model_dump())
-    
-    modules_data = [
-        {
-            "title": "Introduction to AI-Powered Development",
-            "description": "Understand what it means to build with AI, not just use it. Learn the mindset shift required to become an AI engineer.",
-            "order": 1,
-            "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
-            "resources": [
-                {"title": "What is AI Engineering?", "url": "https://example.com/ai-engineering"},
-                {"title": "The AI-First Mindset", "url": "https://example.com/ai-mindset"}
-            ],
-            "has_assessment": False
-        },
-        {
-            "title": "Prompt Engineering Fundamentals",
-            "description": "Learn to communicate with AI models effectively to get production-quality output. Master the art of crafting prompts.",
-            "order": 2,
-            "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
-            "resources": [
-                {"title": "Prompt Engineering Guide", "url": "https://example.com/prompt-guide"},
-                {"title": "Best Practices", "url": "https://example.com/prompt-practices"}
-            ],
-            "has_assessment": True,
-            "assessment_prompt": "Build a prompt chain that takes a user requirement and generates a working code snippet. Submit your GitHub repo."
-        },
-        {
-            "title": "Building Your First AI Application",
-            "description": "Put it all together. Build a real application powered by AI. From concept to working prototype.",
-            "order": 3,
-            "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
-            "resources": [
-                {"title": "AI App Architecture", "url": "https://example.com/ai-architecture"},
-                {"title": "Integration Patterns", "url": "https://example.com/integration"}
-            ],
-            "has_assessment": True,
-            "assessment_prompt": "Build and deploy a working AI-powered application. Submit the live link and repo."
-        },
-        {
-            "title": "Deployment & Production Readiness",
-            "description": "Ship it. Learn to deploy, monitor, and maintain AI applications in production environments.",
-            "order": 4,
-            "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
-            "resources": [
-                {"title": "Deployment Guide", "url": "https://example.com/deployment"},
-                {"title": "Monitoring AI Apps", "url": "https://example.com/monitoring"}
-            ],
-            "has_assessment": True,
-            "assessment_prompt": "Deploy your Module 3 project to production with proper error handling and monitoring. Submit the live URL."
-        }
-    ]
-    
-    for module_data in modules_data:
-        module = Module(track_id=track.id, **module_data)
-        await db.modules.insert_one(module.model_dump())
-    
-    admin_exists = await db.users.find_one({"email": "joshua@thcohq.com"}, {"_id": 0})
-    if not admin_exists:
-        admin = User(
-            email="joshua@thcohq.com",
-            password_hash=hash_password("admin123"),
-            name="Joshua",
-            role="super_admin",
-            onboarding_completed=True
-        )
-        await db.users.insert_one(admin.model_dump())
-    
-    return {"message": "Seed data created successfully", "track_id": track.id}
+@api_router.get("/certificates/{filename}")
+async def get_certificate_file(filename: str):
+    file_path = CERTIFICATES_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    return FileResponse(file_path, media_type="application/pdf", filename=filename)
 
 # Include the router
 app.include_router(api_router)
