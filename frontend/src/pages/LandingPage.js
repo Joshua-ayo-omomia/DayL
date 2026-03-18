@@ -285,7 +285,7 @@ export default function LandingPage() {
                             {[
                                 { icon: ClipboardCheck, title: "Assessment", desc: "Complete your technology capability assessment", step: "Step 1" },
                                 { icon: UserCheck, title: "Mentor Match", desc: "Matched to an expert based on your diagnostic and growth area", step: "Step 2" },
-                                { icon: Video, title: "Weekly 1-on-1 Sessions", desc: "45-minute video calls every week with personalized guidance", step: "Step 3" },
+                                { icon: Video, title: "1-on-1 Sessions", desc: "Scheduled video calls with your mentor for personalized guidance", step: "Step 3" },
                                 { icon: Shield, title: "Project Reviews", desc: "Every build exercise reviewed to production-quality standards", step: "Step 4" },
                             ].map((item, i) => (
                                 <div key={item.title} className="relative">
