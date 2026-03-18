@@ -56,6 +56,9 @@ Realloc is an enterprise workforce reallocation platform that diagnoses AI displ
 - [x] My Mentor page with session schedule and review history
 - [x] Notification bell for enterprise and participant roles
 - [x] Activity feed
+- [x] Landing page redesign: futuristic animations, scroll reveals, animated counters, glassmorphism, no Sagicor references
+- [x] "Connect with Your AI Mentor" section on landing page with 4-step flow + 3 mentor cards
+- [x] "Connect with Your Team" section on participant dashboard with personalized mentor flow status + assigned mentor card
 - [x] All 26/26 backend tests passing, all frontend tests passing
 
 ## Backlog (P3)
