@@ -951,7 +951,7 @@ YouTube embeds cannot have hardware-level DRM. These measures are **deterrents**
 
 ## Base URL
 ```
-https://skillforge-154.preview.emergentagent.com/api
+https://enterprise-dashboard-11.preview.emergentagent.com/api
 ```
 
 ## Authentication
@@ -1428,7 +1428,7 @@ JWT_SECRET=daylearning_jwt_secret_key_2024_thco
 **File:** `/app/frontend/.env`
 
 ```env
-REACT_APP_BACKEND_URL=https://skillforge-154.preview.emergentagent.com
+REACT_APP_BACKEND_URL=https://enterprise-dashboard-11.preview.emergentagent.com
 ```
 
 ---
@@ -1438,7 +1438,7 @@ REACT_APP_BACKEND_URL=https://skillforge-154.preview.emergentagent.com
 ## Current Deployment
 
 **Platform:** Emergent  
-**URL:** https://skillforge-154.preview.emergentagent.com
+**URL:** https://enterprise-dashboard-11.preview.emergentagent.com
 
 ## Services
 
@@ -1600,10 +1600,10 @@ db.applications.find()
 ### Test API
 ```bash
 # Health check
-curl https://skillforge-154.preview.emergentagent.com/api/health
+curl https://enterprise-dashboard-11.preview.emergentagent.com/api/health
 
 # Login
-curl -X POST https://skillforge-154.preview.emergentagent.com/api/auth/login \
+curl -X POST https://enterprise-dashboard-11.preview.emergentagent.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"joshua@thcohq.com","password":"admin123"}'
 ```

@@ -495,7 +495,7 @@ JWT_SECRET=daylearning_jwt_secret_key_2024_thco
 
 ### Frontend (/app/frontend/.env)
 ```
-REACT_APP_BACKEND_URL=https://your-app.preview.emergentagent.com
+REACT_APP_BACKEND_URL=https://enterprise-dashboard-11.preview.emergentagent.com
 ```
 
 ---
@@ -589,7 +589,7 @@ REACT_APP_BACKEND_URL=https://your-app.preview.emergentagent.com
 ## Support & Access
 
 ### URLs
-- **Production:** https://skillforge-154.preview.emergentagent.com
+- **Production:** https://enterprise-dashboard-11.preview.emergentagent.com
 - **Admin Login:** /login
 - **Student Registration:** /register?code=XXXXXXXX
 

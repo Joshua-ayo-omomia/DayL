@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 
 class DayLearningAPITester:
-    def __init__(self, base_url="https://skillforge-154.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://enterprise-dashboard-11.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.admin_token = None
         self.student_token = None
