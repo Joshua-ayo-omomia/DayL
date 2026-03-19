@@ -273,15 +273,15 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto">
                     <Reveal>
                         <span className="text-xs text-gray-600 tracking-widest uppercase mb-4 block">Mentorship</span>
-                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-4">Connect with Your AI Mentor</h2>
-                        <p className="text-sm text-gray-500 max-w-2xl mb-16 leading-relaxed">
-                            Every participant is matched with a practitioner from the world's leading technology companies. Your mentor is assigned based on your diagnostic results and growth path.
+                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-4">Practitioners from Leading Technology Companies</h2>
+                        <p className="text-sm text-gray-500 max-w-3xl mb-16 leading-relaxed">
+                            269 vetted AI practitioners from Meta, NVIDIA, McKinsey, Morgan Stanley, xAI, IBM, SAP, AWS, and 50+ other organizations. 23 PhDs. 70+ senior engineers and architects. Every participant is matched based on their diagnostic results and growth path.
                         </p>
                     </Reveal>
 
                     {/* Mentor Flow */}
                     <Reveal delay={0.1}>
-                        <div className="grid md:grid-cols-4 gap-4 mb-16" data-testid="mentor-flow">
+                        <div className="grid md:grid-cols-4 gap-4" data-testid="mentor-flow">
                             {[
                                 { icon: ClipboardCheck, title: "Assessment", desc: "Complete your technology capability assessment", step: "Step 1" },
                                 { icon: UserCheck, title: "Mentor Match", desc: "Matched to an expert based on your diagnostic and growth area", step: "Step 2" },
@@ -308,33 +308,6 @@ export default function LandingPage() {
                             ))}
                         </div>
                     </Reveal>
-
-                    {/* Mentor Cards */}
-                    <div className="grid md:grid-cols-3 gap-6" data-testid="mentor-cards">
-                        {[
-                            { name: "Marcus Thompson", credential: "Former Meta Engineering Lead", spec: "AI workflow automation and agent architecture", years: 8, approach: "I focus on helping you ship production-quality AI solutions, not just prototypes." },
-                            { name: "David Okafor", credential: "Former NVIDIA AI Specialist", spec: "Enterprise AI deployment and GPU-accelerated computing", years: 6, approach: "If it doesn't work in production, it doesn't work. I push you to build things that survive real traffic." },
-                            { name: "Sarah Kim", credential: "Former OpenAI Practitioner", spec: "LLM applications and prompt engineering", years: 5, approach: "The best AI solutions come from domain experts who learn to speak AI, not AI experts who learn your domain." },
-                        ].map((m, i) => (
-                            <Reveal key={m.name} delay={0.1 + i * 0.1}>
-                                <motion.div whileHover={{ y: -6 }} transition={{ duration: 0.25 }}
-                                    className="group relative bg-card/50 backdrop-blur-sm border border-white/5 p-6 hover:border-white/15 transition-all duration-500"
-                                    data-testid={`landing-mentor-${m.name.split(' ')[0].toLowerCase()}`}>
-                                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    <div className="relative">
-                                        <div className="w-14 h-14 bg-white/[0.04] border border-white/10 rounded-full flex items-center justify-center mb-4 group-hover:border-white/25 transition-colors duration-300">
-                                            <span className="text-xl font-bold text-gray-400 group-hover:text-white transition-colors duration-300">{m.name.charAt(0)}</span>
-                                        </div>
-                                        <h3 className="text-base font-semibold text-white">{m.name}</h3>
-                                        <p className="text-xs text-gray-400 mt-0.5">{m.credential}</p>
-                                        <p className="text-xs text-gray-600 mt-1">{m.spec}</p>
-                                        <p className="text-xs text-gray-600 mt-1">{m.years} years experience</p>
-                                        <p className="text-xs text-gray-500 italic mt-4 border-l border-white/10 pl-3 leading-relaxed">"{m.approach}"</p>
-                                    </div>
-                                </motion.div>
-                            </Reveal>
-                        ))}
-                    </div>
                 </div>
             </section>
 
